@@ -1,145 +1,219 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createResume } from "./actions";
+import { createPortfolioAction } from "./actions";
 
 type Props = {
   searchParams?: Promise<{ error?: string }>;
 };
 
 function inputClassName() {
-  return "mt-2 w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500";
+  return "w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-zinc-500";
+}
+
+function textareaClassName() {
+  return "min-h-[140px] w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-zinc-500";
 }
 
 export default async function CreatePage({ searchParams }: Props) {
   const supabase = await createClient();
-  const { data, error: authError } = await supabase.auth.getUser();
-  const params = await searchParams;
 
-  if (authError || !data.user) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
     redirect("/login");
   }
 
+  const params = await searchParams;
+  const error = params?.error;
+
   return (
-    <main className="min-h-screen bg-zinc-50 px-6 py-10">
-      <div className="mx-auto max-w-5xl rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <main className="min-h-screen bg-[#f6f4f1] px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-5xl rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.04)] sm:p-8">
+        <div className="flex flex-col gap-4 border-b border-zinc-200 pb-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-zinc-900">Novo currículo</h1>
-            <p className="mt-2 text-zinc-600">
-              Preencha os dados abaixo para gerar seu currículo por link.
+            <p className="text-xs uppercase tracking-[0.35em] text-zinc-500">
+              novo portfólio
+            </p>
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-950">
+              Criar portfólio
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+              Preencha os dados abaixo para gerar seu portfólio por link.
             </p>
           </div>
 
           <Link
             href="/dashboard"
-            className="rounded-xl border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+            className="rounded-2xl border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
           >
             Voltar ao dashboard
           </Link>
         </div>
 
-        {params?.error ? (
+        {error ? (
           <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {params.error}
+            {error}
           </div>
         ) : null}
 
-        <form action={createResume} className="mt-8 space-y-6">
-          <div>
-            <label htmlFor="name" className="text-sm font-medium text-zinc-900">
-              Nome completo *
-            </label>
-            <input id="name" name="name" required placeholder="Seu nome completo" className={inputClassName()} />
-          </div>
-
-          <div>
-            <label htmlFor="role" className="text-sm font-medium text-zinc-900">
-              Cargo / área
-            </label>
-            <input id="role" name="role" placeholder="Ex.: Atendimento, design, vendas, suporte..." className={inputClassName()} />
-          </div>
-
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div>
-              <label htmlFor="email" className="text-sm font-medium text-zinc-900">
-                Email
+        <form action={createPortfolioAction} className="mt-8 space-y-8">
+          <section className="grid gap-5 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="mb-2 block text-sm font-medium text-zinc-900">
+                Nome completo *
               </label>
-              <input id="email" name="email" type="email" defaultValue={data.user.email ?? ""} placeholder="seuemail@exemplo.com" className={inputClassName()} />
+              <input
+                name="name"
+                type="text"
+                required
+                className={inputClassName()}
+                placeholder="Seu nome"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="mb-2 block text-sm font-medium text-zinc-900">
+                Título profissional
+              </label>
+              <input
+                name="title"
+                type="text"
+                className={inputClassName()}
+                placeholder="Designer, desenvolvedor, social media..."
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="mb-2 block text-sm font-medium text-zinc-900">Bio</label>
+              <textarea
+                name="bio"
+                className={textareaClassName()}
+                placeholder="Descreva quem você é, no que trabalha e o que entrega."
+              />
             </div>
 
             <div>
-              <label htmlFor="phone" className="text-sm font-medium text-zinc-900">
-                Telefone
-              </label>
-              <input id="phone" name="phone" placeholder="(00) 00000-0000" className={inputClassName()} />
-            </div>
-          </div>
-
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div>
-              <label htmlFor="city" className="text-sm font-medium text-zinc-900">
-                Cidade
-              </label>
-              <input id="city" name="city" placeholder="Sua cidade" className={inputClassName()} />
+              <label className="mb-2 block text-sm font-medium text-zinc-900">Cidade</label>
+              <input
+                name="city"
+                type="text"
+                className={inputClassName()}
+                placeholder="Sua cidade"
+              />
             </div>
 
             <div>
-              <label htmlFor="linkedin" className="text-sm font-medium text-zinc-900">
-                LinkedIn
-              </label>
-              <input id="linkedin" name="linkedin" placeholder="linkedin.com/in/seu-link" className={inputClassName()} />
+              <label className="mb-2 block text-sm font-medium text-zinc-900">Email</label>
+              <input
+                name="email"
+                type="email"
+                className={inputClassName()}
+                placeholder="voce@email.com"
+                defaultValue={user.email ?? ""}
+              />
             </div>
-          </div>
 
-          <div>
-            <label htmlFor="portfolio" className="text-sm font-medium text-zinc-900">
-              Portfólio / site
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-900">WhatsApp</label>
+              <input
+                name="whatsapp"
+                type="text"
+                className={inputClassName()}
+                placeholder="(64) 99999-9999"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-900">Foto (URL)</label>
+              <input
+                name="photo_url"
+                type="text"
+                className={inputClassName()}
+                placeholder="https://..."
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-900">LinkedIn</label>
+              <input
+                name="linkedin"
+                type="text"
+                className={inputClassName()}
+                placeholder="linkedin.com/in/seu-link"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-900">GitHub</label>
+              <input
+                name="github"
+                type="text"
+                className={inputClassName()}
+                placeholder="github.com/seuusuario"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-900">Site</label>
+              <input
+                name="website"
+                type="text"
+                className={inputClassName()}
+                placeholder="seusite.com"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="mb-2 block text-sm font-medium text-zinc-900">
+                Projetos
+              </label>
+              <textarea
+                name="projects"
+                className={textareaClassName()}
+                placeholder={"Um projeto por linha\nLanding page para X\nApp para Y\nLoja virtual para Z"}
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="mb-2 block text-sm font-medium text-zinc-900">
+                Habilidades
+              </label>
+              <textarea
+                name="skills"
+                className={textareaClassName()}
+                placeholder={"Uma habilidade por linha\nUI Design\nNext.js\nCopywriting"}
+              />
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+            <label className="flex items-center gap-3 text-sm font-medium text-zinc-900">
+              <input
+                name="is_public"
+                type="checkbox"
+                defaultChecked
+                className="h-4 w-4 rounded border-zinc-300"
+              />
+              Deixar portfólio público
             </label>
-            <input id="portfolio" name="portfolio" placeholder="seusite.com" className={inputClassName()} />
-          </div>
+          </section>
 
-          <div>
-            <label htmlFor="summary" className="text-sm font-medium text-zinc-900">
-              Resumo profissional
-            </label>
-            <textarea id="summary" name="summary" rows={5} placeholder="Fale rapidamente sobre você, sua experiência e seus objetivos." className={inputClassName()} />
-          </div>
-
-          <div>
-            <label htmlFor="experience" className="text-sm font-medium text-zinc-900">
-              Experiência
-            </label>
-            <textarea id="experience" name="experience" rows={6} placeholder="Escreva uma experiência por linha." className={inputClassName()} />
-          </div>
-
-          <div>
-            <label htmlFor="education" className="text-sm font-medium text-zinc-900">
-              Formação
-            </label>
-            <textarea id="education" name="education" rows={5} placeholder="Escreva uma formação por linha." className={inputClassName()} />
-          </div>
-
-          <div>
-            <label htmlFor="skills" className="text-sm font-medium text-zinc-900">
-              Habilidades
-            </label>
-            <textarea id="skills" name="skills" rows={4} placeholder="Escreva uma habilidade por linha." className={inputClassName()} />
-          </div>
-
-          <div className="flex flex-col-reverse gap-3 border-t border-zinc-200 pt-6 sm:flex-row sm:justify-end">
+          <div className="flex flex-wrap justify-end gap-3 border-t border-zinc-200 pt-6">
             <Link
               href="/dashboard"
-              className="rounded-xl border border-zinc-300 px-5 py-3 text-center text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+              className="rounded-2xl border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
             >
               Cancelar
             </Link>
 
             <button
               type="submit"
-              className="rounded-xl bg-zinc-900 px-5 py-3 text-sm font-medium text-white hover:bg-zinc-800"
+              className="rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
             >
-              Criar currículo
+              Criar portfólio
             </button>
           </div>
         </form>

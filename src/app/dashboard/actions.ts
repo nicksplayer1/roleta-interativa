@@ -3,10 +3,30 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { slugifyResumeName } from "@/lib/resume-utils";
+import { slugifyPortfolioName } from "@/lib/portfolio-utils";
 
-async function requireUser() {
+async function generateUniqueSlug(name: string) {
   const supabase = await createClient();
+  const baseSlug = slugifyPortfolioName(name);
+  let slug = baseSlug || `portfolio-${Date.now()}`;
+
+  for (let i = 0; i < 50; i++) {
+    const { data } = await supabase
+      .from("portfolios")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (!data) return slug;
+    slug = `${baseSlug}-${i + 2}`;
+  }
+
+  return `${baseSlug}-${Date.now()}`;
+}
+
+export async function deletePortfolioAction(formData: FormData) {
+  const supabase = await createClient();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -15,101 +35,58 @@ async function requireUser() {
     redirect("/login");
   }
 
-  return { supabase, user };
-}
+  const id = String(formData.get("id") || "");
 
-async function generateUniqueSlug(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  rawName: string,
-  excludeId?: string
-) {
-  const base = slugifyResumeName(rawName) || `curriculo-${Date.now()}`;
-  let slug = base;
-  let count = 1;
-
-  while (true) {
-    let query = supabase
-      .from("resumes")
-      .select("id")
-      .eq("slug", slug)
-      .limit(1);
-
-    if (excludeId) {
-      query = query.neq("id", excludeId);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error("Não foi possível validar o slug.");
-    }
-
-    if (!data || data.length === 0) {
-      return slug;
-    }
-
-    count += 1;
-    slug = `${base}-${count}`;
-  }
-}
-
-export async function deleteResume(formData: FormData) {
-  const resumeId = String(formData.get("resumeId") || "");
-  const { supabase, user } = await requireUser();
-
-  const { error } = await supabase
-    .from("resumes")
-    .delete()
-    .eq("id", resumeId)
-    .eq("user_id", user.id);
-
-  if (error) {
-    redirect("/dashboard?error=Não foi possível excluir o currículo.");
-  }
+  await supabase.from("portfolios").delete().eq("id", id).eq("user_id", user.id);
 
   revalidatePath("/dashboard");
-  redirect("/dashboard?success=Currículo excluído com sucesso.");
 }
 
-export async function duplicateResume(formData: FormData) {
-  const resumeId = String(formData.get("resumeId") || "");
-  const { supabase, user } = await requireUser();
+export async function duplicatePortfolioAction(formData: FormData) {
+  const supabase = await createClient();
 
-  const { data: original, error: fetchError } = await supabase
-    .from("resumes")
-    .select("*")
-    .eq("id", resumeId)
-    .eq("user_id", user.id)
-    .single();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (fetchError || !original) {
-    redirect("/dashboard?error=Não foi possível duplicar o currículo.");
+  if (!user) {
+    redirect("/login");
   }
 
-  const newName = `${original.name} Cópia`;
-  const slug = await generateUniqueSlug(supabase, newName);
+  const id = String(formData.get("id") || "");
 
-  const { error } = await supabase.from("resumes").insert({
+  const { data: portfolio } = await supabase
+    .from("portfolios")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!portfolio) {
+    revalidatePath("/dashboard");
+    return;
+  }
+
+  const newName = `${portfolio.name} Cópia`;
+  const slug = await generateUniqueSlug(newName);
+
+  await supabase.from("portfolios").insert({
     user_id: user.id,
     slug,
     name: newName,
-    role: original.role,
-    summary: original.summary,
-    phone: original.phone,
-    email: original.email,
-    city: original.city,
-    linkedin: original.linkedin,
-    portfolio: original.portfolio,
-    experience: original.experience,
-    education: original.education,
-    skills: original.skills,
-    is_public: original.is_public ?? true,
+    title: portfolio.title,
+    bio: portfolio.bio,
+    city: portfolio.city,
+    email: portfolio.email,
+    whatsapp: portfolio.whatsapp,
+    linkedin: portfolio.linkedin,
+    github: portfolio.github,
+    website: portfolio.website,
+    photo_url: portfolio.photo_url,
+    projects: portfolio.projects,
+    skills: portfolio.skills,
+    is_public: portfolio.is_public,
   });
 
-  if (error) {
-    redirect("/dashboard?error=Não foi possível duplicar o currículo.");
-  }
-
   revalidatePath("/dashboard");
-  redirect("/dashboard?success=Currículo duplicado com sucesso.");
 }
