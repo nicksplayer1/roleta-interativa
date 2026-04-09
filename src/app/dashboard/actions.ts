@@ -5,12 +5,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { slugifyPortfolioName } from "@/lib/portfolio-utils";
 
-async function generateUniqueSlug(name: string) {
+async function generateDuplicateSlug(name: string) {
   const supabase = await createClient();
-  const baseSlug = slugifyPortfolioName(name);
-  let slug = baseSlug || `portfolio-${Date.now()}`;
+  const baseSlug = `${slugifyPortfolioName(name) || "portfolio"}-copy`;
 
-  for (let i = 0; i < 50; i++) {
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (true) {
     const { data } = await supabase
       .from("portfolios")
       .select("id")
@@ -18,62 +20,58 @@ async function generateUniqueSlug(name: string) {
       .maybeSingle();
 
     if (!data) return slug;
-    slug = `${baseSlug}-${i + 2}`;
-  }
 
-  return `${baseSlug}-${Date.now()}`;
+    counter += 1;
+    slug = `${baseSlug}-${counter}`;
+  }
 }
 
-export async function deletePortfolioAction(formData: FormData) {
+export async function deletePortfolio(formData: FormData) {
   const supabase = await createClient();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (authError || !authData.user) {
     redirect("/login");
   }
 
   const id = String(formData.get("id") || "");
+  if (!id) return;
 
-  await supabase.from("portfolios").delete().eq("id", id).eq("user_id", user.id);
+  await supabase
+    .from("portfolios")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", authData.user.id);
 
   revalidatePath("/dashboard");
 }
 
-export async function duplicatePortfolioAction(formData: FormData) {
+export async function duplicatePortfolio(formData: FormData) {
   const supabase = await createClient();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (authError || !authData.user) {
     redirect("/login");
   }
 
   const id = String(formData.get("id") || "");
+  if (!id) return;
 
   const { data: portfolio } = await supabase
     .from("portfolios")
     .select("*")
     .eq("id", id)
-    .eq("user_id", user.id)
-    .maybeSingle();
+    .eq("user_id", authData.user.id)
+    .single();
 
-  if (!portfolio) {
-    revalidatePath("/dashboard");
-    return;
-  }
+  if (!portfolio) return;
 
-  const newName = `${portfolio.name} Cópia`;
-  const slug = await generateUniqueSlug(newName);
+  const newSlug = await generateDuplicateSlug(portfolio.name);
 
   await supabase.from("portfolios").insert({
-    user_id: user.id,
-    slug,
-    name: newName,
+    user_id: authData.user.id,
+    slug: newSlug,
+    name: portfolio.name,
     title: portfolio.title,
     bio: portfolio.bio,
     city: portfolio.city,

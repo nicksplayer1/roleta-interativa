@@ -6,11 +6,13 @@ export function slugifyPortfolioName(value: string) {
     .trim()
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 export function splitLines(value: string | null | undefined) {
   if (!value) return [];
+
   return value
     .split("\n")
     .map((item) => item.trim())
@@ -19,12 +21,17 @@ export function splitLines(value: string | null | undefined) {
 
 export function ensureUrl(value: string | null | undefined) {
   if (!value) return "";
-  const trimmed = value.trim();
 
+  const trimmed = value.trim();
   if (!trimmed) return "";
+
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     return trimmed;
   }
 
   return `https://${trimmed}`;
+}
+
+export function normalizeText(value: FormDataEntryValue | null) {
+  return typeof value === "string" ? value.trim() : "";
 }

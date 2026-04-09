@@ -1,217 +1,222 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createPortfolioAction } from "./actions";
+import { createPortfolio } from "./actions";
 
 type Props = {
   searchParams?: Promise<{ error?: string }>;
 };
 
-function inputClassName() {
-  return "w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-zinc-500";
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="mb-2 block text-sm font-medium text-zinc-800">
+      {children}
+    </label>
+  );
 }
 
-function textareaClassName() {
-  return "min-h-[140px] w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-zinc-500";
+function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      className="w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-500"
+    />
+  );
+}
+
+function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      {...props}
+      className="min-h-[120px] w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-500"
+    />
+  );
 }
 
 export default async function CreatePage({ searchParams }: Props) {
   const supabase = await createClient();
+  const { data, error } = await supabase.auth.getUser();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (error || !data.user) {
     redirect("/login");
   }
 
-  const params = await searchParams;
-  const error = params?.error;
+  const params = (await searchParams) ?? {};
 
   return (
-    <main className="min-h-screen bg-[#f6f4f1] px-4 py-8 sm:px-6 sm:py-10">
-      <div className="mx-auto max-w-5xl rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.04)] sm:p-8">
-        <div className="flex flex-col gap-4 border-b border-zinc-200 pb-6 sm:flex-row sm:items-start sm:justify-between">
+    <main className="min-h-screen bg-zinc-50 px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-6 flex flex-col gap-4 rounded-[28px] border border-zinc-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-zinc-500">
-              novo portfólio
+              Portfólio instantâneo
             </p>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-950">
-              Criar portfólio
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950 sm:text-4xl">
+              Criar novo portfólio
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
-              Preencha os dados abaixo para gerar seu portfólio por link.
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600 sm:text-base">
+              Monte uma página pessoal bonita para compartilhar seus projetos,
+              links, bio e habilidades em poucos minutos.
             </p>
           </div>
 
           <Link
             href="/dashboard"
-            className="rounded-2xl border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
+            className="inline-flex h-12 items-center justify-center rounded-2xl border border-zinc-300 px-5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
           >
             Voltar ao dashboard
           </Link>
         </div>
 
-        {error ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
+        <form action={createPortfolio} className="rounded-[28px] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+          {params.error ? (
+            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {params.error}
+            </div>
+          ) : null}
+
+          <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="space-y-8">
+              <section>
+                <h2 className="text-lg font-semibold text-zinc-950">Identidade</h2>
+                <p className="mt-1 text-sm text-zinc-600">
+                  Essas informações aparecem no topo da sua página pública.
+                </p>
+
+                <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <FieldLabel>Nome completo *</FieldLabel>
+                    <Input name="name" placeholder="Ex.: Ana Souza" required />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <FieldLabel>Título profissional</FieldLabel>
+                    <Input
+                      name="title"
+                      placeholder="Ex.: Designer de Produto, Desenvolvedor Front-end"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <FieldLabel>Bio</FieldLabel>
+                    <Textarea
+                      name="bio"
+                      placeholder="Escreva uma apresentação curta sobre você, sua especialidade e o tipo de projeto que desenvolve."
+                    />
+                  </div>
+
+                  <div>
+                    <FieldLabel>Cidade</FieldLabel>
+                    <Input name="city" placeholder="Ex.: São Paulo, SP" />
+                  </div>
+
+                  <div>
+                    <FieldLabel>Foto (URL)</FieldLabel>
+                    <Input
+                      name="photo_url"
+                      placeholder="https://seusite.com/foto.jpg"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-lg font-semibold text-zinc-950">Contato e links</h2>
+                <p className="mt-1 text-sm text-zinc-600">
+                  Coloque apenas os canais que quer exibir.
+                </p>
+
+                <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <FieldLabel>Email</FieldLabel>
+                    <Input name="email" type="email" placeholder="voce@email.com" />
+                  </div>
+
+                  <div>
+                    <FieldLabel>WhatsApp</FieldLabel>
+                    <Input name="whatsapp" placeholder="Ex.: 64992606140" />
+                  </div>
+
+                  <div>
+                    <FieldLabel>LinkedIn</FieldLabel>
+                    <Input name="linkedin" placeholder="linkedin.com/in/seu-link" />
+                  </div>
+
+                  <div>
+                    <FieldLabel>GitHub</FieldLabel>
+                    <Input name="github" placeholder="github.com/seu-usuario" />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <FieldLabel>Site / portfólio externo</FieldLabel>
+                    <Input name="website" placeholder="seusite.com" />
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div className="space-y-8">
+              <section>
+                <h2 className="text-lg font-semibold text-zinc-950">Conteúdo</h2>
+                <p className="mt-1 text-sm text-zinc-600">
+                  Separe projetos e habilidades por linha para ficar mais bonito.
+                </p>
+
+                <div className="mt-5 space-y-5">
+                  <div>
+                    <FieldLabel>Projetos</FieldLabel>
+                    <Textarea
+                      name="projects"
+                      placeholder={"Landing page para clínica\nDashboard de analytics\nLoja virtual com checkout"}
+                    />
+                  </div>
+
+                  <div>
+                    <FieldLabel>Habilidades</FieldLabel>
+                    <Textarea
+                      name="skills"
+                      placeholder={"UI Design\nUX Research\nReact\nNext.js"}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section className="rounded-[24px] border border-zinc-200 bg-zinc-50 p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-base font-semibold text-zinc-950">
+                      Visibilidade pública
+                    </h3>
+                    <p className="mt-1 text-sm leading-6 text-zinc-600">
+                      Deixe ligado para que sua página possa ser aberta pelo link.
+                    </p>
+                  </div>
+
+                  <label className="inline-flex items-center gap-3 text-sm font-medium text-zinc-800">
+                    <input
+                      type="checkbox"
+                      name="is_public"
+                      defaultChecked
+                      className="h-4 w-4 rounded border-zinc-300"
+                    />
+                    Público
+                  </label>
+                </div>
+              </section>
+            </div>
           </div>
-        ) : null}
 
-        <form action={createPortfolioAction} className="mt-8 space-y-8">
-          <section className="grid gap-5 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-zinc-900">
-                Nome completo *
-              </label>
-              <input
-                name="name"
-                type="text"
-                required
-                className={inputClassName()}
-                placeholder="Seu nome"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-zinc-900">
-                Título profissional
-              </label>
-              <input
-                name="title"
-                type="text"
-                className={inputClassName()}
-                placeholder="Designer, desenvolvedor, social media..."
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-zinc-900">Bio</label>
-              <textarea
-                name="bio"
-                className={textareaClassName()}
-                placeholder="Descreva quem você é, no que trabalha e o que entrega."
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-900">Cidade</label>
-              <input
-                name="city"
-                type="text"
-                className={inputClassName()}
-                placeholder="Sua cidade"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-900">Email</label>
-              <input
-                name="email"
-                type="email"
-                className={inputClassName()}
-                placeholder="voce@email.com"
-                defaultValue={user.email ?? ""}
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-900">WhatsApp</label>
-              <input
-                name="whatsapp"
-                type="text"
-                className={inputClassName()}
-                placeholder="(64) 99999-9999"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-900">Foto (URL)</label>
-              <input
-                name="photo_url"
-                type="text"
-                className={inputClassName()}
-                placeholder="https://..."
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-900">LinkedIn</label>
-              <input
-                name="linkedin"
-                type="text"
-                className={inputClassName()}
-                placeholder="linkedin.com/in/seu-link"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-900">GitHub</label>
-              <input
-                name="github"
-                type="text"
-                className={inputClassName()}
-                placeholder="github.com/seuusuario"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-900">Site</label>
-              <input
-                name="website"
-                type="text"
-                className={inputClassName()}
-                placeholder="seusite.com"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-zinc-900">
-                Projetos
-              </label>
-              <textarea
-                name="projects"
-                className={textareaClassName()}
-                placeholder={"Um projeto por linha\nLanding page para X\nApp para Y\nLoja virtual para Z"}
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-zinc-900">
-                Habilidades
-              </label>
-              <textarea
-                name="skills"
-                className={textareaClassName()}
-                placeholder={"Uma habilidade por linha\nUI Design\nNext.js\nCopywriting"}
-              />
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-            <label className="flex items-center gap-3 text-sm font-medium text-zinc-900">
-              <input
-                name="is_public"
-                type="checkbox"
-                defaultChecked
-                className="h-4 w-4 rounded border-zinc-300"
-              />
-              Deixar portfólio público
-            </label>
-          </section>
-
-          <div className="flex flex-wrap justify-end gap-3 border-t border-zinc-200 pt-6">
+          <div className="mt-8 flex flex-col-reverse gap-3 border-t border-zinc-200 pt-6 sm:flex-row sm:justify-end">
             <Link
               href="/dashboard"
-              className="rounded-2xl border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
+              className="inline-flex h-12 items-center justify-center rounded-2xl border border-zinc-300 px-5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
             >
               Cancelar
             </Link>
 
             <button
               type="submit"
-              className="rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
+              className="inline-flex h-12 items-center justify-center rounded-2xl bg-zinc-950 px-6 text-sm font-medium text-white transition hover:bg-zinc-800"
             >
               Criar portfólio
             </button>
