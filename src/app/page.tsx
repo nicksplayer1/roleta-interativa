@@ -2,85 +2,91 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[#f6f3ee] text-zinc-900">
-      <section className="mx-auto grid min-h-screen max-w-7xl items-center gap-10 px-6 py-12 lg:grid-cols-[1.1fr_0.9fr]">
-        <div>
-          <p className="mb-5 text-xs uppercase tracking-[0.45em] text-zinc-500">
-            Convite interativo
+    <main className="min-h-screen bg-neutral-50 text-neutral-950">
+      <section className="mx-auto grid min-h-screen max-w-7xl items-center gap-10 px-6 py-12 lg:grid-cols-2">
+        <div className="max-w-2xl">
+          <p className="mb-5 text-xs uppercase tracking-[0.45em] text-neutral-500">
+            ROLETA INTERATIVA
           </p>
 
-          <h1 className="max-w-4xl text-5xl font-semibold tracking-tight text-zinc-950 sm:text-6xl lg:text-7xl">
-            Crie um convite bonito, rápido e pronto para compartilhar.
+          <h1 className="text-5xl font-semibold leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
+            Crie uma roleta bonita,
+            <br />
+            rápida e pronta
+            <br />
+            para compartilhar.
           </h1>
 
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-600">
-            Monte uma página especial para aniversário, casamento, chá revelação,
-            formatura ou qualquer evento em poucos minutos.
+          <p className="mt-6 max-w-xl text-lg leading-8 text-neutral-600">
+            Monte roletas personalizadas para decisões, desafios, sorteios,
+            brincadeiras e conteúdo para redes sociais em poucos minutos.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/create"
-              className="rounded-full bg-zinc-950 px-6 py-3 text-sm font-medium text-white transition hover:bg-zinc-800"
+              className="rounded-full bg-black px-6 py-3 text-sm font-medium text-white transition hover:opacity-90"
             >
-              Criar convite
+              Criar roleta
             </Link>
 
             <Link
               href="/login"
-              className="rounded-full border border-zinc-300 bg-white px-6 py-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
+              className="rounded-full border border-neutral-300 bg-white px-6 py-3 text-sm font-medium text-neutral-900 transition hover:bg-neutral-100"
             >
               Entrar
             </Link>
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-          <p className="mb-4 text-xs uppercase tracking-[0.4em] text-zinc-400">
-            Exemplo
+        <div className="rounded-[2rem] border border-neutral-200 bg-white p-8 shadow-sm">
+          <p className="mb-5 text-xs uppercase tracking-[0.35em] text-neutral-400">
+            EXEMPLO
           </p>
 
-          <div className="overflow-hidden rounded-[1.75rem] bg-[#fbf6f6] p-6">
-            <div className="rounded-[1.5rem] border border-white/80 bg-white/70 p-6 shadow-sm backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.35em] text-zinc-500">
-                Convite especial
+          <div className="rounded-[2rem] bg-neutral-50 p-6">
+            <div className="rounded-[2rem] border border-neutral-200 bg-white p-6 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.35em] text-neutral-400">
+                ROLETA ESPECIAL
               </p>
 
-              <h2 className="mt-4 text-3xl font-semibold text-zinc-950">
-                Aniversário da Helena
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight">
+                O que vamos comer hoje?
               </h2>
 
-              <p className="mt-2 text-zinc-600">Sábado, 18 de outubro • 19h</p>
+              <p className="mt-3 text-neutral-600">
+                Pizza • Hambúrguer • Sushi • Açaí
+              </p>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl bg-white p-4">
-                  <p className="text-xs uppercase tracking-[0.35em] text-zinc-400">
-                    Local
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-neutral-50 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-neutral-400">
+                    USO
                   </p>
-                  <p className="mt-2 text-sm text-zinc-700">
-                    Espaço Jardim das Flores
+                  <p className="mt-2 text-sm text-neutral-700">
+                    Sorteios, desafios e decisões rápidas
                   </p>
                 </div>
 
-                <div className="rounded-2xl bg-white p-4">
-                  <p className="text-xs uppercase tracking-[0.35em] text-zinc-400">
-                    Tema
+                <div className="rounded-2xl bg-neutral-50 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-neutral-400">
+                    LINK
                   </p>
-                  <p className="mt-2 text-sm text-zinc-700">
-                    Elegante • Floral • Noite
+                  <p className="mt-2 text-sm text-neutral-700">
+                    Público ou privado por URL
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-2">
-                <span className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-700">
-                  Confirmar presença
+              <div className="mt-6 flex flex-wrap gap-3">
+                <span className="rounded-full border border-neutral-300 px-4 py-2 text-sm text-neutral-700">
+                  Girar agora
                 </span>
-                <span className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-700">
-                  Ver mapa
+                <span className="rounded-full border border-neutral-300 px-4 py-2 text-sm text-neutral-700">
+                  Editar opções
                 </span>
-                <span className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-700">
-                  Lista de presentes
+                <span className="rounded-full border border-neutral-300 px-4 py-2 text-sm text-neutral-700">
+                  Copiar link
                 </span>
               </div>
             </div>

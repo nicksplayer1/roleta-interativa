@@ -2,11 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: {
-    default: "Currículo Link",
-    template: "%s | Currículo Link",
-  },
-  description: "Crie, edite e compartilhe seu currículo online por link.",
+  title: "Roleta Interativa",
+  description: "Crie roletas personalizadas, compartilhe por link e gire online.",
 };
 
 export default function RootLayout({
