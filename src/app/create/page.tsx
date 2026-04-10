@@ -1,259 +1,231 @@
-import Link from "next/link";
-import { createInviteAction } from "./actions";
-import CoverUploadField from "@/components/invite/cover-upload-field";
+ "use client";
 
-const inputClassName =
-  "w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-base text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-zinc-400";
-const textareaClassName = () =>
-  `${inputClassName} min-h-[140px] resize-y`;
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import WheelPreview from "@/components/wheel/wheel-preview";
+import { getDefaultOptions, makeWheelSlug, normalizeOptions } from "@/lib/wheel-utils";
+import { WheelOption } from "@/types/wheel";
+import { supabase } from "@/lib/supabase/client";
 
-type Props = {
-  searchParams?: Promise<{ error?: string }>;
-};
+export default function CreateWheelPage() {
+  const router = useRouter();
 
-export default async function CreateInvitePage({ searchParams }: Props) {
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [resultMessage, setResultMessage] = useState("Resultado sorteado:");
+  const [spinSeconds, setSpinSeconds] = useState(4);
+  const [isPublic, setIsPublic] = useState(true);
+  const [options, setOptions] = useState<WheelOption[]>(getDefaultOptions());
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const validOptions = useMemo(() => normalizeOptions(options), [options]);
+
+  function updateOption(index: number, field: "label" | "color", value: string) {
+    setOptions((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
+  }
+
+  function addOption() {
+    setOptions((prev) => [...prev, { label: `Opção ${prev.length + 1}`, color: "#8b5cf6" }]);
+  }
+
+  function removeOption(index: number) {
+    setOptions((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleSave() {
+    setError("");
+
+    if (!title.trim()) {
+      setError("Digite um título.");
+      return;
+    }
+
+    if (validOptions.length < 2) {
+      setError("Adicione pelo menos 2 opções.");
+      return;
+    }
+
+    setSaving(true);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setSaving(false);
+      setError("Você precisa estar logado.");
+      return;
+    }
+
+    const slug = makeWheelSlug(title);
+
+    const { error } = await supabase.from("wheels").insert({
+      user_id: user.id,
+      slug,
+      title: title.trim(),
+      description: description.trim() || null,
+      cover_image_url: coverImageUrl.trim() || null,
+      options: validOptions,
+      result_message: resultMessage.trim() || null,
+      spin_seconds: spinSeconds,
+      is_public: isPublic,
+    });
+
+    setSaving(false);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    router.push("/dashboard");
+  }
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-zinc-500">
-                Convite interativo
-              </p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-zinc-950">
-                Criar novo convite
-              </h1>
-              <p className="mt-3 max-w-2xl text-base leading-7 text-zinc-600">
-                Monte uma página linda para compartilhar data, local, capa e confirmação de presença do evento.
-              </p>
-            </div>
-
-            <Link
-              href="/dashboard"
-              className="rounded-xl border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
-            >
-              Voltar ao dashboard
-            </Link>
+    <main className="mx-auto max-w-6xl px-4 py-10">
+      <div className="grid gap-8 lg:grid-cols-2">
+        <section className="space-y-6 rounded-3xl border p-6 shadow-sm">
+          <div>
+            <h1 className="text-3xl font-bold">Criar roleta</h1>
+            <p className="mt-2 text-sm text-gray-500">Monte sua roleta personalizada.</p>
           </div>
-        </section>
 
-        {resolvedSearchParams?.error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {resolvedSearchParams.error}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Título</label>
+            <input
+              className="w-full rounded-2xl border px-4 py-3"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex: O que vamos comer hoje?"
+            />
           </div>
-        ) : null}
 
-        <form action={createInviteAction} className="grid gap-6">
-          <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="space-y-5">
-                <div>
-                  <h2 className="text-2xl font-semibold tracking-tight text-zinc-950">Identidade</h2>
-                  <p className="mt-2 text-sm leading-6 text-zinc-600">
-                    Essas informações aparecem no topo da página do convite.
-                  </p>
-                </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Descrição</label>
+            <textarea
+              className="min-h-24 w-full rounded-2xl border px-4 py-3"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Uma frase curta sobre a roleta"
+            />
+          </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-800">
-                    Título do convite *
-                  </label>
-                  <input
-                    name="title"
-                    className={inputClassName}
-                    placeholder="Ex.: Casamento de Ana e Lucas"
-                    required
-                  />
-                </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">URL da capa</label>
+            <input
+              className="w-full rounded-2xl border px-4 py-3"
+              value={coverImageUrl}
+              onChange={(e) => setCoverImageUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-800">
-                    Nome do anfitrião
-                  </label>
-                  <input
-                    name="host_name"
-                    className={inputClassName}
-                    placeholder="Ex.: Família Souza"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-800">
-                    Tipo de evento
-                  </label>
-                  <input
-                    name="event_type"
-                    className={inputClassName}
-                    placeholder="Ex.: aniversário, casamento, chá de bebê"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-800">
-                    Descrição
-                  </label>
-                  <textarea
-                    name="description"
-                    className={textareaClassName()}
-                    placeholder="Escreva um texto curto convidando as pessoas para esse momento especial."
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-5">
-                <div>
-                  <h2 className="text-2xl font-semibold tracking-tight text-zinc-950">Capa</h2>
-                  <p className="mt-2 text-sm leading-6 text-zinc-600">
-                    Você pode enviar uma imagem ou colar um link direto.
-                  </p>
-                </div>
-
-                <CoverUploadField name="cover_image_url" initialValue="" label="Imagem de capa" />
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-800">Tema</label>
-                  <select name="theme" defaultValue="elegante" className={inputClassName}>
-                    <option value="elegante">Elegante</option>
-                    <option value="romantico">Romântico</option>
-                    <option value="moderno">Moderno</option>
-                    <option value="infantil">Infantil</option>
-                  </select>
-                </div>
-
-                <label className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-                  <input
-                    type="checkbox"
-                    name="is_public"
-                    defaultChecked
-                    className="h-4 w-4 rounded border-zinc-300"
-                  />
-                  Deixar este convite público por link
-                </label>
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="space-y-5">
-                <div>
-                  <h2 className="text-2xl font-semibold tracking-tight text-zinc-950">
-                    Data e local
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-zinc-600">
-                    Essas informações ficam em destaque na página pública.
-                  </p>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-zinc-800">Data</label>
-                    <input type="date" name="event_date" className={inputClassName} />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-zinc-800">Hora</label>
-                    <input type="time" name="event_time" className={inputClassName} />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-800">
-                    Nome do local
-                  </label>
-                  <input
-                    name="location_name"
-                    className={inputClassName}
-                    placeholder="Ex.: Espaço Jardim Azul"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-800">
-                    Endereço
-                  </label>
-                  <textarea
-                    name="location_address"
-                    className={textareaClassName()}
-                    placeholder="Rua, número, bairro, cidade"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-800">
-                    Link do mapa
-                  </label>
-                  <input
-                    name="map_link"
-                    className={inputClassName}
-                    placeholder="Link do Google Maps"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-5">
-                <div>
-                  <h2 className="text-2xl font-semibold tracking-tight text-zinc-950">
-                    Links extras
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-zinc-600">
-                    Confirmação de presença, lista de presentes e observações.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-800">
-                    Link para confirmar presença
-                  </label>
-                  <input
-                    name="rsvp_link"
-                    className={inputClassName}
-                    placeholder="Link do WhatsApp, formulário ou site"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-800">
-                    Link da lista de presentes
-                  </label>
-                  <input
-                    name="gift_link"
-                    className={inputClassName}
-                    placeholder="Opcional"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-800">
-                    Traje / observação
-                  </label>
-                  <textarea
-                    name="dress_code"
-                    className={textareaClassName()}
-                    placeholder="Ex.: branco e bege / traje esporte fino / evento infantil"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 flex flex-wrap justify-end gap-3">
-              <Link
-                href="/dashboard"
-                className="rounded-xl border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
-              >
-                Cancelar
-              </Link>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Opções</label>
               <button
-                type="submit"
-                className="rounded-xl bg-zinc-950 px-5 py-3 text-sm font-medium text-white hover:bg-zinc-800"
+                type="button"
+                onClick={addOption}
+                className="rounded-xl border px-3 py-2 text-sm"
               >
-                Criar convite
+                + Adicionar
               </button>
             </div>
-          </section>
-        </form>
+
+            {options.map((option, index) => (
+              <div key={index} className="grid grid-cols-[1fr_100px_80px] gap-2">
+                <input
+                  className="rounded-2xl border px-4 py-3"
+                  value={option.label}
+                  onChange={(e) => updateOption(index, "label", e.target.value)}
+                  placeholder={`Opção ${index + 1}`}
+                />
+                <input
+                  type="color"
+                  className="h-[50px] w-full rounded-2xl border px-2 py-2"
+                  value={option.color}
+                  onChange={(e) => updateOption(index, "color", e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeOption(index)}
+                  className="rounded-2xl border px-3 py-3 text-sm"
+                >
+                  Remover
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Mensagem final</label>
+              <input
+                className="w-full rounded-2xl border px-4 py-3"
+                value={resultMessage}
+                onChange={(e) => setResultMessage(e.target.value)}
+                placeholder="Resultado sorteado:"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tempo do giro (segundos)</label>
+              <input
+                type="number"
+                min={2}
+                max={10}
+                className="w-full rounded-2xl border px-4 py-3"
+                value={spinSeconds}
+                onChange={(e) => setSpinSeconds(Number(e.target.value))}
+              />
+            </div>
+          </div>
+
+          <label className="flex items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+            />
+            Deixar público por link
+          </label>
+
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full rounded-2xl bg-black px-4 py-3 text-white disabled:opacity-60"
+          >
+            {saving ? "Salvando..." : "Salvar roleta"}
+          </button>
+        </section>
+
+        <section className="space-y-6 rounded-3xl border p-6 shadow-sm">
+          <h2 className="text-2xl font-bold">Prévia</h2>
+
+          {coverImageUrl ? (
+            <img
+              src={coverImageUrl}
+              alt="Capa da roleta"
+              className="h-52 w-full rounded-3xl object-cover"
+            />
+          ) : null}
+
+          <div>
+            <h3 className="text-2xl font-semibold">{title || "Sua roleta"}</h3>
+            <p className="mt-2 text-sm text-gray-500">
+              {description || "A descrição vai aparecer aqui."}
+            </p>
+          </div>
+
+          <WheelPreview options={validOptions} />
+        </section>
       </div>
     </main>
   );
