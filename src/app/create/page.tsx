@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
@@ -8,7 +8,7 @@ import WheelPreview from "@/components/wheel/wheel-preview";
 import { getDefaultOptions, makeWheelSlug, normalizeOptions } from "@/lib/wheel-utils";
 import type { WheelOption } from "@/types/wheel";
 
-export default function CreateWheelPage() {
+function CreateWheelPageInner() {
   const searchParams = useSearchParams();
   const isSendMode = searchParams.get("mode") === "send";
 
@@ -325,5 +325,21 @@ export default function CreateWheelPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function CreateWheelPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#050114] px-4 py-8 text-white">
+          <div className="mx-auto max-w-3xl rounded-[34px] border border-white/10 bg-white/5 p-8 text-center text-lg">
+            Carregando criação da roleta...
+          </div>
+        </main>
+      }
+    >
+      <CreateWheelPageInner />
+    </Suspense>
   );
 }
