@@ -47,7 +47,7 @@ export default function HeroLiveWheel() {
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState("");
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(true);
 
   const safeOptions = useMemo(() => {
     const cleaned = options
@@ -107,119 +107,112 @@ export default function HeroLiveWheel() {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-[34px] border border-white/10 bg-[linear-gradient(180deg,#16051f_0%,#090316_55%,#071427_100%)] p-5 text-white shadow-[0_20px_80px_rgba(0,0,0,0.45)] md:p-6">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(236,72,153,0.16),_transparent_28%),radial-gradient(circle_at_bottom,_rgba(6,182,212,0.16),_transparent_30%)]" />
+    <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+      <div className="relative overflow-hidden rounded-[34px] border border-white/10 bg-[linear-gradient(180deg,#16051f_0%,#090316_55%,#071427_100%)] p-5 text-white shadow-[0_20px_80px_rgba(0,0,0,0.45)] md:p-6">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(236,72,153,0.16),_transparent_28%),radial-gradient(circle_at_bottom,_rgba(6,182,212,0.16),_transparent_30%)]" />
 
-      <div className="relative mb-4 flex flex-wrap gap-2">
-        <div className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-white/85 backdrop-blur">
-          Roleta ao vivo
-        </div>
-        <div className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-white/85 backdrop-blur">
-          Sorteio alinhado
-        </div>
-      </div>
+        <div className="relative mx-auto w-full max-w-[560px]">
+          <div className="pointer-events-none absolute left-1/2 top-[6px] z-20 h-0 w-0 -translate-x-1/2 border-l-[18px] border-r-[18px] border-t-[34px] border-l-transparent border-r-transparent border-t-white drop-shadow-[0_10px_25px_rgba(255,255,255,0.18)]" />
 
-      <div className="relative mx-auto w-full max-w-[560px]">
-        <div className="pointer-events-none absolute left-1/2 top-[6px] z-20 h-0 w-0 -translate-x-1/2 border-l-[18px] border-r-[18px] border-t-[34px] border-l-transparent border-r-transparent border-t-white drop-shadow-[0_10px_25px_rgba(255,255,255,0.18)]" />
+          <div className="rounded-full bg-black/70 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_15px_50px_rgba(0,0,0,0.6)]">
+            <div className="rounded-full bg-black p-4">
+              <div
+                className="relative aspect-square w-full rounded-full border-[10px] border-black bg-[#14061f] shadow-[0_0_60px_rgba(0,0,0,0.5)]"
+                style={{
+                  transform: `rotate(${rotation}deg)`,
+                  transition: spinning
+                    ? "transform 4.2s cubic-bezier(0.15, 0.9, 0.2, 1)"
+                    : "none",
+                }}
+              >
+                <svg viewBox="0 0 500 500" className="h-full w-full rounded-full">
+                  {safeOptions.map((option, index) => {
+                    const startAngle = index * anglePerSlice;
+                    const endAngle = (index + 1) * anglePerSlice;
+                    const centerAngle = startAngle + anglePerSlice / 2;
+                    const point = polarToCartesian(250, 250, 162, centerAngle);
+                    const pillWidth = Math.max(78, Math.min(132, option.label.length * 10));
 
-        <div className="rounded-full bg-black/70 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_15px_50px_rgba(0,0,0,0.6)]">
-          <div className="rounded-full bg-black p-4">
-            <div
-              className="relative aspect-square w-full rounded-full border-[10px] border-black bg-[#14061f] shadow-[0_0_60px_rgba(0,0,0,0.5)]"
-              style={{
-                transform: `rotate(${rotation}deg)`,
-                transition: spinning
-                  ? "transform 4.2s cubic-bezier(0.15, 0.9, 0.2, 1)"
-                  : "none",
-              }}
-            >
-              <svg viewBox="0 0 500 500" className="h-full w-full rounded-full">
-                {safeOptions.map((option, index) => {
-                  const startAngle = index * anglePerSlice;
-                  const endAngle = (index + 1) * anglePerSlice;
-                  const centerAngle = startAngle + anglePerSlice / 2;
-                  const point = polarToCartesian(250, 250, 162, centerAngle);
-                  const pillWidth = Math.max(78, Math.min(132, option.label.length * 10));
-
-                  return (
-                    <g key={`${option.label}-${index}`}>
-                      <path
-                        d={createSlicePath(startAngle, endAngle, 250)}
-                        fill={option.color}
-                        opacity={0.98}
-                        stroke="rgba(0,0,0,0.22)"
-                        strokeWidth="1"
-                      />
-                      <g transform={`translate(${point.x}, ${point.y})`}>
-                        <rect
-                          x={-pillWidth / 2}
-                          y={-17}
-                          rx={14}
-                          ry={14}
-                          width={pillWidth}
-                          height={34}
-                          fill="rgba(0,0,0,0.22)"
-                          filter="drop-shadow(0 8px 10px rgba(0,0,0,0.25))"
+                    return (
+                      <g key={`${option.label}-${index}`}>
+                        <path
+                          d={createSlicePath(startAngle, endAngle, 250)}
+                          fill={option.color}
+                          opacity={0.98}
+                          stroke="rgba(0,0,0,0.22)"
+                          strokeWidth="1"
                         />
-                        <text
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          fill="#ffffff"
-                          fontSize="13"
-                          fontWeight="800"
-                        >
-                          {option.label.length > 14 ? `${option.label.slice(0, 14)}…` : option.label}
-                        </text>
+                        <g transform={`translate(${point.x}, ${point.y})`}>
+                          <rect
+                            x={-pillWidth / 2}
+                            y={-17}
+                            rx={14}
+                            ry={14}
+                            width={pillWidth}
+                            height={34}
+                            fill="rgba(0,0,0,0.22)"
+                            filter="drop-shadow(0 8px 10px rgba(0,0,0,0.25))"
+                          />
+                          <text
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            fill="#ffffff"
+                            fontSize="13"
+                            fontWeight="800"
+                          >
+                            {option.label.length > 14 ? `${option.label.slice(0, 14)}…` : option.label}
+                          </text>
+                        </g>
                       </g>
-                    </g>
-                  );
-                })}
-              </svg>
+                    );
+                  })}
+                </svg>
 
-              <div className="absolute left-1/2 top-1/2 z-10 flex h-[112px] w-[112px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[4px] border-white/10 bg-black shadow-[0_15px_40px_rgba(0,0,0,0.55)]">
-                <span className="select-none text-[18px] font-black uppercase tracking-tight text-white">GIRAR</span>
+                <div className="absolute left-1/2 top-1/2 z-10 flex h-[112px] w-[112px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[4px] border-white/10 bg-black shadow-[0_15px_40px_rgba(0,0,0,0.55)]">
+                  <span className="select-none text-[18px] font-black uppercase tracking-tight text-white">GIRAR</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="relative mt-5 flex flex-wrap justify-center gap-3">
-        <button
-          onClick={pickWinner}
-          disabled={spinning}
-          className="rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {spinning ? "Girando..." : "Girar agora"}
-        </button>
+        <div className="relative mt-5 flex flex-wrap justify-center gap-3">
+          <button
+            onClick={pickWinner}
+            disabled={spinning}
+            className="rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {spinning ? "Girando..." : "Girar agora"}
+          </button>
 
-        <button
-          onClick={() => setEditing((prev) => !prev)}
-          className="rounded-full border border-white/10 bg-white/8 px-8 py-4 text-base font-semibold text-white transition hover:bg-white/12"
-        >
-          {editing ? "Fechar edição" : "Editar demo"}
-        </button>
-      </div>
+          <button
+            onClick={() => setEditing((prev) => !prev)}
+            className="rounded-full border border-white/10 bg-white/8 px-8 py-4 text-base font-semibold text-white transition hover:bg-white/12"
+          >
+            {editing ? "Ocultar configurações" : "Mostrar configurações"}
+          </button>
+        </div>
 
-      <div className="relative mt-5 rounded-[28px] border border-cyan-400/20 bg-[linear-gradient(90deg,rgba(255,255,255,0.04),rgba(6,182,212,0.18))] px-6 py-5 text-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)]">
-        <div className="text-xs uppercase tracking-[0.4em] text-white/65">Resultado</div>
-        <div className="mt-3 min-h-[56px] text-3xl font-black leading-tight text-white md:text-5xl">
-          {result ? `Resultado: ${result}` : "Agora a opção sorteada para exatamente na seta"}
+        <div className="relative mt-5 rounded-[28px] border border-cyan-400/20 bg-[linear-gradient(90deg,rgba(255,255,255,0.04),rgba(6,182,212,0.18))] px-6 py-5 text-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)]">
+          <div className="text-xs uppercase tracking-[0.4em] text-white/65">Resultado</div>
+          <div className="mt-3 min-h-[56px] text-3xl font-black leading-tight text-white md:text-5xl">
+            {result ? `Resultado: ${result}` : "Gire a roleta para ver o resultado"}
+          </div>
         </div>
       </div>
 
-      {editing ? (
-        <div className="relative mt-5 rounded-[28px] border border-white/10 bg-black/25 p-4 md:p-5">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h3 className="text-lg font-bold text-white">Editar demo da roleta</h3>
-            <button
-              onClick={addOption}
-              className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
-            >
-              + Adicionar opção
-            </button>
-          </div>
+      <div className="rounded-[34px] border border-white/10 bg-black/25 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.35)] md:p-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h3 className="text-lg font-bold text-white">Configurações da roleta</h3>
+          <button
+            onClick={addOption}
+            className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
+          >
+            + Adicionar opção
+          </button>
+        </div>
 
+        {editing ? (
           <div className="space-y-3">
             {options.map((option, index) => (
               <div key={`${index}-${option.label}`} className="grid gap-3 md:grid-cols-[1fr_110px_110px]">
@@ -244,8 +237,12 @@ export default function HeroLiveWheel() {
               </div>
             ))}
           </div>
-        </div>
-      ) : null}
+        ) : (
+          <div className="rounded-[26px] border border-white/10 bg-white/5 p-5 text-white/70">
+            Clique em <span className="font-semibold text-white">Mostrar configurações</span> para editar opções e cores.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
