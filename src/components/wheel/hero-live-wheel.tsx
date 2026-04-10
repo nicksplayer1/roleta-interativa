@@ -91,8 +91,6 @@ export default function HeroLiveWheel() {
     const winnerIndex = Math.floor(Math.random() * safeOptions.length);
     const extraTurns = 7;
     const winnerCenterAngle = winnerIndex * anglePerSlice + anglePerSlice / 2;
-
-    // Ajuste correto para o vencedor parar exatamente na seta do topo.
     const currentNormalized = ((rotation % 360) + 360) % 360;
     const desiredNormalized = (360 - winnerCenterAngle) % 360;
     const delta = (desiredNormalized - currentNormalized + 360) % 360;
@@ -109,20 +107,22 @@ export default function HeroLiveWheel() {
   }
 
   return (
-    <div className="rounded-[34px] border border-white/10 bg-[linear-gradient(180deg,rgba(236,72,153,0.08),rgba(6,182,212,0.10))] p-5 shadow-[0_20px_80px_rgba(0,0,0,0.45)] md:p-6">
-      <div className="mb-4 flex flex-wrap gap-2">
-        <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80">
+    <div className="relative overflow-hidden rounded-[34px] border border-white/10 bg-[linear-gradient(180deg,#16051f_0%,#090316_55%,#071427_100%)] p-5 text-white shadow-[0_20px_80px_rgba(0,0,0,0.45)] md:p-6">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(236,72,153,0.16),_transparent_28%),radial-gradient(circle_at_bottom,_rgba(6,182,212,0.16),_transparent_30%)]" />
+
+      <div className="relative mb-4 flex flex-wrap gap-2">
+        <div className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-white/85 backdrop-blur">
           Roleta ao vivo
         </div>
-        <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80">
+        <div className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-white/85 backdrop-blur">
           Sorteio alinhado
         </div>
       </div>
 
       <div className="relative mx-auto w-full max-w-[560px]">
-        <div className="pointer-events-none absolute left-1/2 top-[2px] z-20 h-0 w-0 -translate-x-1/2 border-l-[18px] border-r-[18px] border-b-[34px] border-l-transparent border-r-transparent border-b-white drop-shadow-[0_10px_25px_rgba(255,255,255,0.18)]" />
+        <div className="pointer-events-none absolute left-1/2 top-[6px] z-20 h-0 w-0 -translate-x-1/2 border-l-[18px] border-r-[18px] border-t-[34px] border-l-transparent border-r-transparent border-t-white drop-shadow-[0_10px_25px_rgba(255,255,255,0.18)]" />
 
-        <div className="rounded-full bg-black/65 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_15px_50px_rgba(0,0,0,0.6)]">
+        <div className="rounded-full bg-black/70 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_15px_50px_rgba(0,0,0,0.6)]">
           <div className="rounded-full bg-black p-4">
             <div
               className="relative aspect-square w-full rounded-full border-[10px] border-black bg-[#14061f] shadow-[0_0_60px_rgba(0,0,0,0.5)]"
@@ -177,14 +177,14 @@ export default function HeroLiveWheel() {
               </svg>
 
               <div className="absolute left-1/2 top-1/2 z-10 flex h-[112px] w-[112px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[4px] border-white/10 bg-black shadow-[0_15px_40px_rgba(0,0,0,0.55)]">
-                <span className="select-none text-[18px] font-black uppercase tracking-tight">GIRAR</span>
+                <span className="select-none text-[18px] font-black uppercase tracking-tight text-white">GIRAR</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-5 flex flex-wrap justify-center gap-3">
+      <div className="relative mt-5 flex flex-wrap justify-center gap-3">
         <button
           onClick={pickWinner}
           disabled={spinning}
@@ -195,21 +195,21 @@ export default function HeroLiveWheel() {
 
         <button
           onClick={() => setEditing((prev) => !prev)}
-          className="rounded-full border border-white/10 bg-white/5 px-8 py-4 text-base font-semibold text-white transition hover:bg-white/10"
+          className="rounded-full border border-white/10 bg-white/8 px-8 py-4 text-base font-semibold text-white transition hover:bg-white/12"
         >
           {editing ? "Fechar edição" : "Editar demo"}
         </button>
       </div>
 
-      <div className="mt-5 rounded-[28px] border border-white/10 bg-[linear-gradient(90deg,rgba(255,255,255,0.03),rgba(6,182,212,0.18))] px-6 py-5 text-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)]">
-        <div className="text-xs uppercase tracking-[0.4em] text-white/60">Resultado</div>
-        <div className="mt-3 min-h-[56px] text-3xl font-black leading-tight md:text-5xl">
+      <div className="relative mt-5 rounded-[28px] border border-cyan-400/20 bg-[linear-gradient(90deg,rgba(255,255,255,0.04),rgba(6,182,212,0.18))] px-6 py-5 text-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)]">
+        <div className="text-xs uppercase tracking-[0.4em] text-white/65">Resultado</div>
+        <div className="mt-3 min-h-[56px] text-3xl font-black leading-tight text-white md:text-5xl">
           {result ? `Resultado: ${result}` : "Agora a opção sorteada para exatamente na seta"}
         </div>
       </div>
 
       {editing ? (
-        <div className="mt-5 rounded-[28px] border border-white/10 bg-white/5 p-4 md:p-5">
+        <div className="relative mt-5 rounded-[28px] border border-white/10 bg-black/25 p-4 md:p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h3 className="text-lg font-bold text-white">Editar demo da roleta</h3>
             <button
@@ -226,7 +226,7 @@ export default function HeroLiveWheel() {
                 <input
                   value={option.label}
                   onChange={(e) => updateOption(index, "label", e.target.value)}
-                  className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none placeholder:text-white/35"
+                  className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-white outline-none placeholder:text-white/35"
                   placeholder={`Opção ${index + 1}`}
                 />
                 <input
@@ -237,7 +237,7 @@ export default function HeroLiveWheel() {
                 />
                 <button
                   onClick={() => removeOption(index)}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                  className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/12"
                 >
                   Remover
                 </button>
