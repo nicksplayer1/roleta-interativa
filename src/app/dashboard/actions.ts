@@ -5,50 +5,50 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { slugifyInviteTitle } from "@/lib/invite-utils";
 
-async function generateUniqueDuplicateSlug(title: string) {
+async function generateUniqueSlug(title: string) {
   const supabase = await createClient();
-  const baseSlug = slugifyInviteTitle(title || "convite");
-  const slug = baseSlug || "convite";
+  const baseSlug = slugifyInviteTitle(title) || "convite";
+  let slug = baseSlug;
+  let count = 1;
 
-  for (let i = 0; i < 50; i++) {
-    const candidate = i === 0 ? `${slug}-copia` : `${slug}-copia-${i + 1}`;
-
+  while (true) {
     const { data } = await supabase
       .from("invites")
       .select("id")
-      .eq("slug", candidate)
+      .eq("slug", slug)
       .maybeSingle();
 
-    if (!data) return candidate;
+    if (!data) return slug;
+    count += 1;
+    slug = `${baseSlug}-${count}`;
   }
-
-  return `${slug}-copia-${Date.now()}`;
 }
 
-export async function deleteInvite(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
-  const supabase = await createClient();
+export async function deleteInviteAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
 
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !id) return;
+  if (!user) redirect("/login");
 
   await supabase.from("invites").delete().eq("id", id).eq("user_id", user.id);
-
   revalidatePath("/dashboard");
 }
 
-export async function duplicateInvite(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
-  const supabase = await createClient();
+export async function duplicateInviteAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
 
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !id) return;
+  if (!user) redirect("/login");
 
   const { data: invite } = await supabase
     .from("invites")
@@ -59,30 +59,17 @@ export async function duplicateInvite(formData: FormData) {
 
   if (!invite) return;
 
-  const slug = await generateUniqueDuplicateSlug(invite.title);
+  const duplicateTitle = `${invite.title} - cópia`;
+  const slug = await generateUniqueSlug(duplicateTitle);
 
-  const { error } = await supabase.from("invites").insert({
+  const { id: _discardId, created_at: _createdAt, updated_at: _updatedAt, ...rest } = invite;
+
+  await supabase.from("invites").insert({
+    ...rest,
     user_id: user.id,
+    title: duplicateTitle,
     slug,
-    title: `${invite.title} (cópia)`,
-    host_name: invite.host_name,
-    event_type: invite.event_type,
-    description: invite.description,
-    event_date: invite.event_date,
-    event_time: invite.event_time,
-    location_name: invite.location_name,
-    location_address: invite.location_address,
-    map_link: invite.map_link,
-    cover_image_url: invite.cover_image_url,
-    theme: invite.theme,
-    rsvp_link: invite.rsvp_link,
-    gift_link: invite.gift_link,
-    dress_code: invite.dress_code,
-    is_public: invite.is_public,
   });
 
-  if (!error) {
-    revalidatePath("/dashboard");
-    redirect("/dashboard?success=duplicated");
-  }
+  revalidatePath("/dashboard");
 }

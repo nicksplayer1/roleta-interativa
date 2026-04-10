@@ -1,24 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import CopyLinkButton from "@/components/dashboard/copy-link-button";
-import { countdownParts, ensureUrl, formatDateBr, formatThemeLabel, formatTimeBr } from "@/lib/invite-utils";
+import {
+  buildMapHref,
+  ensureUrl,
+  formatEventDate,
+  getInviteCountdownLabel,
+} from "@/lib/invite-utils";
+import CopyInviteLinkButton from "@/components/invite/copy-invite-link-button";
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
-
-function chipClass(theme: string | null) {
-  const map: Record<string, string> = {
-    elegante: "bg-zinc-950 text-white",
-    romantico: "bg-rose-100 text-rose-700",
-    infantil: "bg-sky-100 text-sky-700",
-    minimalista: "bg-zinc-100 text-zinc-700",
-    festa: "bg-amber-100 text-amber-700",
-  };
-
-  return map[theme || "elegante"] || "bg-zinc-950 text-white";
-}
 
 export default async function InvitePublicPage({ params }: Props) {
   const { slug } = await params;
@@ -31,137 +24,186 @@ export default async function InvitePublicPage({ params }: Props) {
     .eq("is_public", true)
     .maybeSingle();
 
-  if (!invite) notFound();
+  if (!invite) {
+    notFound();
+  }
 
-  const countdown = countdownParts(invite.event_date, invite.event_time);
-  const publicUrl = `/invite/${invite.slug}`;
+  const currentUrl = `/invite/${slug}`;
+  const mapHref = buildMapHref(invite.map_link, invite.location_address, invite.location_name);
+  const rsvpHref = ensureUrl(invite.rsvp_link);
+  const giftHref = ensureUrl(invite.gift_link);
+  const countdownLabel = getInviteCountdownLabel(invite.event_date, invite.event_time);
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-6xl overflow-hidden rounded-[36px] border border-zinc-200 bg-white shadow-sm">
-        <section className="relative">
-          {invite.cover_image_url ? (
-            <div className="relative h-[280px] sm:h-[360px]">
-              <img src={invite.cover_image_url} alt={invite.title} className="h-full w-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
-            </div>
-          ) : (
-            <div className="h-[220px] bg-gradient-to-br from-zinc-100 via-zinc-50 to-white sm:h-[260px]" />
-          )}
-
-          <div className="absolute right-4 top-4 flex flex-wrap gap-2 sm:right-6 sm:top-6">
-            <Link href="/dashboard" className="inline-flex h-11 items-center justify-center rounded-2xl bg-white/90 px-4 text-sm font-medium text-zinc-900 backdrop-blur hover:bg-white">
-              Ir ao dashboard
-            </Link>
-            <CopyLinkButton url={publicUrl} />
-          </div>
-
-          <div className="relative z-10 -mt-16 px-5 pb-6 sm:px-8 sm:pb-8">
-            <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-              <div className="rounded-[32px] border border-zinc-200 bg-white/95 p-6 shadow-sm backdrop-blur sm:p-8">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-xs uppercase tracking-[0.35em] text-zinc-500">Convite público</span>
-                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${chipClass(invite.theme)}`}>
-                    {formatThemeLabel(invite.theme)}
+    <main className="min-h-screen bg-[linear-gradient(180deg,#faf7f2_0%,#fff_100%)] px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6">
+        <section className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
+          <div className="grid lg:grid-cols-[1.25fr_0.75fr]">
+            <div className="p-8 sm:p-10">
+              <div className="flex flex-wrap gap-3">
+                <span className="rounded-full border border-zinc-200 px-3 py-1 text-xs uppercase tracking-[0.3em] text-zinc-500">
+                  Convite online
+                </span>
+                {invite.event_type ? (
+                  <span className="rounded-full border border-zinc-200 px-3 py-1 text-xs uppercase tracking-[0.25em] text-zinc-500">
+                    {invite.event_type}
                   </span>
-                </div>
-
-                <h1 className="mt-4 text-4xl font-semibold tracking-tight text-zinc-950 sm:text-6xl">{invite.title}</h1>
-
-                {invite.event_type ? <p className="mt-4 text-lg text-zinc-700 sm:text-2xl">{invite.event_type}</p> : null}
-                {invite.description ? <p className="mt-6 max-w-3xl text-base leading-8 text-zinc-600 sm:text-lg">{invite.description}</p> : null}
-
-                <div className="mt-8 flex flex-wrap gap-3">
-                  {invite.rsvp_link ? (
-                    <a href={ensureUrl(invite.rsvp_link)} target="_blank" rel="noreferrer" className="inline-flex h-12 items-center justify-center rounded-2xl bg-zinc-950 px-5 text-sm font-medium text-white hover:bg-zinc-800">
-                      Confirmar presença
-                    </a>
-                  ) : null}
-
-                  {invite.gift_link ? (
-                    <a href={ensureUrl(invite.gift_link)} target="_blank" rel="noreferrer" className="inline-flex h-12 items-center justify-center rounded-2xl border border-zinc-300 px-5 text-sm font-medium text-zinc-900 hover:bg-zinc-50">
-                      Ver lista de presentes
-                    </a>
-                  ) : null}
-
-                  {invite.map_link ? (
-                    <a href={ensureUrl(invite.map_link)} target="_blank" rel="noreferrer" className="inline-flex h-12 items-center justify-center rounded-2xl border border-zinc-300 px-5 text-sm font-medium text-zinc-900 hover:bg-zinc-50">
-                      Abrir mapa
-                    </a>
-                  ) : null}
-                </div>
+                ) : null}
               </div>
 
-              <div className="space-y-6">
-                <div className="rounded-[32px] border border-zinc-200 bg-white/95 p-6 shadow-sm backdrop-blur sm:p-8">
-                  <p className="text-xs uppercase tracking-[0.35em] text-zinc-500">Detalhes</p>
+              <h1 className="mt-6 text-4xl font-semibold tracking-tight text-zinc-950 sm:text-5xl">
+                {invite.title}
+              </h1>
 
-                  <div className="mt-5 space-y-4 text-zinc-700">
-                    {invite.host_name ? (
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.28em] text-zinc-500">Anfitrião</p>
-                        <p className="mt-2 text-lg font-medium text-zinc-900">{invite.host_name}</p>
-                      </div>
-                    ) : null}
+              {invite.host_name ? (
+                <p className="mt-4 text-lg text-zinc-700">
+                  Um convite especial de <span className="font-medium">{invite.host_name}</span>
+                </p>
+              ) : null}
 
-                    {invite.event_date ? (
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.28em] text-zinc-500">Data</p>
-                        <p className="mt-2 text-lg font-medium text-zinc-900">{formatDateBr(invite.event_date)}</p>
-                      </div>
-                    ) : null}
+              {invite.description ? (
+                <p className="mt-6 max-w-2xl text-base leading-8 text-zinc-600">
+                  {invite.description}
+                </p>
+              ) : null}
 
-                    {invite.event_time ? (
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.28em] text-zinc-500">Horário</p>
-                        <p className="mt-2 text-lg font-medium text-zinc-900">{formatTimeBr(invite.event_time)}</p>
-                      </div>
-                    ) : null}
+              <div className="mt-8 flex flex-wrap gap-3">
+                {rsvpHref ? (
+                  <a
+                    href={rsvpHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl bg-zinc-950 px-5 py-3 text-sm font-medium text-white hover:bg-zinc-800"
+                  >
+                    Confirmar presença
+                  </a>
+                ) : null}
 
-                    {invite.location_name ? (
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.28em] text-zinc-500">Local</p>
-                        <p className="mt-2 text-lg font-medium text-zinc-900">{invite.location_name}</p>
-                        {invite.location_address ? <p className="mt-1 text-sm leading-7 text-zinc-600">{invite.location_address}</p> : null}
-                      </div>
-                    ) : null}
+                {mapHref ? (
+                  <a
+                    href={mapHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+                  >
+                    Ver mapa
+                  </a>
+                ) : null}
 
-                    {invite.dress_code ? (
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.28em] text-zinc-500">Dress code</p>
-                        <p className="mt-2 text-lg font-medium text-zinc-900">{invite.dress_code}</p>
-                      </div>
-                    ) : null}
-                  </div>
+                <CopyInviteLinkButton url={currentUrl} />
+              </div>
+            </div>
+
+            <div className="relative min-h-[280px] border-t border-zinc-200 bg-zinc-100 lg:min-h-full lg:border-l lg:border-t-0">
+              {invite.cover_image_url ? (
+                <img
+                  src={invite.cover_image_url}
+                  alt={invite.title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center p-8 text-center text-sm uppercase tracking-[0.3em] text-zinc-500">
+                  Adicione uma capa para deixar o convite ainda mais bonito
                 </div>
+              )}
+            </div>
+          </div>
+        </section>
 
-                {countdown ? (
-                  <div className="rounded-[32px] border border-zinc-200 bg-zinc-950 p-6 text-white shadow-sm sm:p-8">
-                    <p className="text-xs uppercase tracking-[0.35em] text-white/70">Contagem regressiva</p>
+        <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <article className="rounded-[2rem] border border-zinc-200 bg-white p-8 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.35em] text-zinc-500">Detalhes do evento</p>
 
-                    {countdown.isPast ? (
-                      <p className="mt-4 text-2xl font-semibold">O evento já começou.</p>
-                    ) : (
-                      <div className="mt-5 grid grid-cols-3 gap-3 text-center">
-                        <div className="rounded-2xl bg-white/10 px-3 py-4">
-                          <p className="text-3xl font-semibold">{countdown.days}</p>
-                          <p className="mt-1 text-xs uppercase tracking-[0.25em] text-white/70">Dias</p>
-                        </div>
-                        <div className="rounded-2xl bg-white/10 px-3 py-4">
-                          <p className="text-3xl font-semibold">{countdown.hours}</p>
-                          <p className="mt-1 text-xs uppercase tracking-[0.25em] text-white/70">Horas</p>
-                        </div>
-                        <div className="rounded-2xl bg-white/10 px-3 py-4">
-                          <p className="text-3xl font-semibold">{countdown.minutes}</p>
-                          <p className="mt-1 text-xs uppercase tracking-[0.25em] text-white/70">Min</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+            <div className="mt-6 grid gap-5">
+              {invite.event_date ? (
+                <div>
+                  <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">Data</p>
+                  <p className="mt-2 text-lg font-medium text-zinc-950">{formatEventDate(invite.event_date)}</p>
+                </div>
+              ) : null}
+
+              {invite.event_time ? (
+                <div>
+                  <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">Hora</p>
+                  <p className="mt-2 text-lg font-medium text-zinc-950">{invite.event_time}</p>
+                </div>
+              ) : null}
+
+              {invite.location_name ? (
+                <div>
+                  <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">Local</p>
+                  <p className="mt-2 text-lg font-medium text-zinc-950">{invite.location_name}</p>
+                </div>
+              ) : null}
+
+              {invite.location_address ? (
+                <div>
+                  <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">Endereço</p>
+                  <p className="mt-2 whitespace-pre-line text-base leading-7 text-zinc-600">
+                    {invite.location_address}
+                  </p>
+                </div>
+              ) : null}
+
+              {countdownLabel ? (
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4">
+                  <p className="text-sm font-medium text-zinc-900">{countdownLabel}</p>
+                </div>
+              ) : null}
+            </div>
+          </article>
+
+          <article className="rounded-[2rem] border border-zinc-200 bg-white p-8 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.35em] text-zinc-500">Informações extras</p>
+
+            <div className="mt-6 grid gap-5">
+              {invite.dress_code ? (
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4">
+                  <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
+                    Traje / observação
+                  </p>
+                  <p className="mt-2 whitespace-pre-line text-base leading-7 text-zinc-700">
+                    {invite.dress_code}
+                  </p>
+                </div>
+              ) : null}
+
+              {giftHref ? (
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4">
+                  <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
+                    Lista de presentes
+                  </p>
+                  <a
+                    href={giftHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-flex rounded-xl border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-white"
+                  >
+                    Abrir lista
+                  </a>
+                </div>
+              ) : null}
+
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/dashboard"
+                  className="rounded-xl border border-zinc-300 px-4 py-3 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+                >
+                  Ir ao dashboard
+                </Link>
+                {rsvpHref ? (
+                  <a
+                    href={rsvpHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl bg-zinc-950 px-4 py-3 text-sm font-medium text-white hover:bg-zinc-800"
+                  >
+                    Confirmar agora
+                  </a>
                 ) : null}
               </div>
             </div>
-          </div>
+          </article>
         </section>
       </div>
     </main>

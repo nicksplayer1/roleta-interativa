@@ -12,60 +12,79 @@ export function slugifyInviteTitle(value: string) {
 export function ensureUrl(value: string | null | undefined) {
   if (!value) return "";
   const trimmed = value.trim();
+
   if (!trimmed) return "";
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     return trimmed;
   }
+
   return `https://${trimmed}`;
 }
 
-export function formatDateBr(value: string | null | undefined) {
+export function formatEventDate(value: string | null | undefined) {
   if (!value) return "";
-  const date = new Date(`${value}T12:00:00`);
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(date);
-}
-
-export function formatTimeBr(value: string | null | undefined) {
-  if (!value) return "";
-  return value.slice(0, 5);
-}
-
-export function formatThemeLabel(value: string | null | undefined) {
-  switch (value) {
-    case "elegante":
-      return "Elegante";
-    case "romantico":
-      return "Romântico";
-    case "infantil":
-      return "Infantil";
-    case "minimalista":
-      return "Minimalista";
-    case "festa":
-      return "Festa";
-    default:
-      return "Personalizado";
+  try {
+    const date = new Date(`${value}T12:00:00`);
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "full",
+      timeZone: "UTC",
+    }).format(date);
+  } catch {
+    return value;
   }
 }
 
-export function countdownParts(date: string | null | undefined, time: string | null | undefined) {
-  if (!date) return null;
+export function formatEventDateCompact(value: string | null | undefined) {
+  if (!value) return "";
+  try {
+    const date = new Date(`${value}T12:00:00`);
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(date);
+  } catch {
+    return value;
+  }
+}
 
-  const eventDate = new Date(`${date}T${time || "12:00"}:00`);
+export function buildMapHref(
+  mapLink: string | null | undefined,
+  locationAddress: string | null | undefined,
+  locationName?: string | null | undefined,
+) {
+  if (mapLink?.trim()) return ensureUrl(mapLink);
+
+  const query = [locationName, locationAddress].filter(Boolean).join(", ").trim();
+  if (!query) return "";
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+export function getInviteCountdownLabel(
+  eventDate: string | null | undefined,
+  eventTime: string | null | undefined,
+) {
+  if (!eventDate) return "";
+
+  const time = eventTime?.trim() ? `${eventTime.trim()}:00` : "12:00:00";
+  const target = new Date(`${eventDate}T${time}`);
+
+  if (Number.isNaN(target.getTime())) return "";
+
   const now = new Date();
+  const diff = target.getTime() - now.getTime();
 
-  const diff = eventDate.getTime() - now.getTime();
-  if (diff <= 0) {
-    return { days: 0, hours: 0, minutes: 0, isPast: true };
+  if (diff <= 0) return "O evento já começou";
+
+  const totalHours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+
+  if (days > 0) {
+    return hours > 0 ? `Faltam ${days} dia(s) e ${hours} hora(s)` : `Faltam ${days} dia(s)`;
   }
 
-  const totalMinutes = Math.floor(diff / (1000 * 60));
-  const days = Math.floor(totalMinutes / (60 * 24));
-  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-  const minutes = totalMinutes % 60;
-
-  return { days, hours, minutes, isPast: false };
+  return `Faltam ${Math.max(1, totalHours)} hora(s)`;
 }
