@@ -1,214 +1,208 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 
-type Slice = {
+type DemoOption = {
   label: string;
   color: string;
 };
 
-const slices: Slice[] = [
-  { label: "Pizza", color: "#fb7185" },
+const DEMO_OPTIONS: DemoOption[] = [
+  { label: "Viagem", color: "#ec4899" },
+  { label: "Surpresa", color: "#fb7185" },
   { label: "Hambúrguer", color: "#8b5cf6" },
-  { label: "Filme", color: "#06b6d4" },
+  { label: "Pizza", color: "#06b6d4" },
   { label: "Açaí", color: "#10b981" },
-  { label: "Viagem", color: "#f59e0b" },
-  { label: "Surpresa", color: "#ec4899" },
+  { label: "Filme", color: "#f59e0b" },
 ];
 
-function pickWeightedIndex(length: number) {
-  return Math.floor(Math.random() * length);
-}
+const WHEEL_SIZE = 560;
+const CENTER = WHEEL_SIZE / 2;
+const RADIUS = 230;
+const LABEL_RADIUS = 146;
 
 export default function HeroLiveWheel() {
   const [rotation, setRotation] = useState(0);
-  const [result, setResult] = useState("Clique e veja a roleta em ação");
   const [spinning, setSpinning] = useState(false);
+  const [result, setResult] = useState("Clique e veja a roleta em ação");
 
-  const step = useMemo(() => 360 / slices.length, []);
+  const sliceAngle = 360 / DEMO_OPTIONS.length;
+
   const labels = useMemo(
     () =>
-      slices.map((slice, index) => {
-        const angle = index * step + step / 2;
-        return { ...slice, angle };
+      DEMO_OPTIONS.map((option, index) => {
+        const centerAngle = index * sliceAngle + sliceAngle / 2;
+        const point = polarToCartesian(CENTER, CENTER, LABEL_RADIUS, centerAngle - 90);
+
+        let labelRotation = centerAngle;
+        if (labelRotation > 90 && labelRotation < 270) {
+          labelRotation += 180;
+        }
+
+        return {
+          ...option,
+          x: point.x,
+          y: point.y,
+          rotation: labelRotation,
+          text: truncate(option.label, 12),
+        };
       }),
-    [step]
+    [sliceAngle]
   );
 
-  function spin() {
+  function spinWheel() {
     if (spinning) return;
 
-    const winnerIndex = pickWeightedIndex(slices.length);
-    const centerAngle = winnerIndex * step + step / 2;
-    const normalizedTarget = 360 - centerAngle;
-    const extraTurns = 360 * 6;
-    const finalRotation = rotation + extraTurns + normalizedTarget + 360;
+    const winnerIndex = Math.floor(Math.random() * DEMO_OPTIONS.length);
+    const fullTurns = 360 * (5 + Math.floor(Math.random() * 2));
+    const landingAngle = (360 - (winnerIndex * sliceAngle + sliceAngle / 2)) % 360;
+    const nextRotation = rotation + fullTurns + landingAngle + Math.random() * (sliceAngle * 0.35);
 
     setSpinning(true);
-    setRotation(finalRotation);
+    setRotation(nextRotation);
 
     window.setTimeout(() => {
-      setResult(`Resultado: ${slices[winnerIndex].label}`);
+      setResult(`Resultado: ${DEMO_OPTIONS[winnerIndex].label}`);
       setSpinning(false);
-    }, 4200);
+    }, 4700);
   }
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[#05010d] text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(217,70,239,0.24),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(34,211,238,0.18),_transparent_35%)]" />
-
-      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-12 pt-6 sm:px-6 lg:grid lg:grid-cols-[1.02fr_0.98fr] lg:gap-10 lg:px-8 lg:pb-16 lg:pt-10">
-        <section className="flex items-center py-4 sm:py-6 lg:py-0">
-          <div className="w-full">
-            <div className="mb-5 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-white/75 backdrop-blur sm:text-xs">
-              Roleta interativa
-            </div>
-
-            <h1 className="max-w-3xl text-5xl font-black leading-[0.93] tracking-[-0.05em] sm:text-6xl lg:text-7xl xl:text-[5.25rem]">
-              Uma roleta chamativa,
-              <span className="block bg-gradient-to-r from-fuchsia-400 via-pink-300 to-cyan-200 bg-clip-text text-transparent">
-                viva e pronta
-              </span>
-              <span className="block text-white">para girar.</span>
-            </h1>
-
-            <p className="mt-5 max-w-2xl text-base leading-8 text-white/82 sm:mt-6 sm:text-lg lg:text-[1.15rem]">
-              Nada de layout com cara de clone. Aqui a pessoa entra e já vê a
-              roleta funcionando, entende o produto em segundos e vai direto
-              para criar a própria versão.
-            </p>
-
-            <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
-              <Link
-                href="/create"
-                className="inline-flex min-h-14 items-center justify-center rounded-full bg-white px-7 text-base font-semibold text-black transition hover:scale-[1.02]"
-              >
-                Criar roleta agora
-              </Link>
-              <button
-                type="button"
-                onClick={spin}
-                disabled={spinning}
-                className="inline-flex min-h-14 items-center justify-center rounded-full border border-white/10 bg-white/6 px-7 text-base font-semibold text-white backdrop-blur transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {spinning ? "Girando..." : "Ver demo ao vivo"}
-              </button>
-            </div>
-
-            <div className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 xl:grid-cols-3">
-              <FeatureCard title="Uso" text="Decisões, sorteios e desafios" />
-              <FeatureCard title="Acesso" text="Sem precisar login para entender" />
-              <FeatureCard title="Impacto" text="Cara de produto mais premium" />
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-8 flex items-center lg:mt-0 lg:justify-end">
-          <div className="relative w-full rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_30px_90px_rgba(0,0,0,0.45)] backdrop-blur sm:p-5 lg:max-w-[42rem] lg:rounded-[2.5rem] lg:p-6">
-            <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-[radial-gradient(circle_at_top,_rgba(244,114,182,0.14),_transparent_36%),radial-gradient(circle_at_bottom_right,_rgba(34,211,238,0.16),_transparent_30%)] lg:rounded-[2.5rem]" />
-
-            <div className="relative flex flex-wrap justify-center gap-2 pb-2 sm:justify-start">
-              <Badge>Roleta ao vivo</Badge>
-              <Badge>sem login para testar</Badge>
-            </div>
-
-            <div className="relative mt-3 flex flex-col items-center">
-              <div className="relative flex w-full justify-center pb-4 sm:pb-5">
-                <div className="absolute top-0 z-20 h-0 w-0 border-x-[16px] border-b-[28px] border-x-transparent border-b-white drop-shadow-[0_6px_16px_rgba(255,255,255,0.28)] sm:border-x-[18px] sm:border-b-[31px]" />
-
-                <div className="relative mt-6 aspect-square w-full max-w-[24rem] sm:max-w-[27rem] lg:max-w-[30rem]">
-                  <div className="absolute inset-0 rounded-full bg-black/80 shadow-[0_0_0_10px_rgba(255,255,255,0.07),0_0_0_18px_rgba(0,0,0,0.62)]" />
-
-                  <div
-                    className="absolute inset-[4.2%] rounded-full border border-white/8"
-                    style={{
-                      background: `conic-gradient(${slices
-                        .map((slice, index) => {
-                          const start = index * step;
-                          const end = start + step;
-                          return `${slice.color} ${start}deg ${end}deg`;
-                        })
-                        .join(", ")})`,
-                      transform: `rotate(${rotation}deg)`,
-                      transition: spinning
-                        ? "transform 4.2s cubic-bezier(0.12, 0.95, 0.12, 1)"
-                        : "none",
-                    }}
-                  >
-                    {labels.map((slice, index) => (
-                      <div
-                        key={`${slice.label}-${index}`}
-                        className="absolute left-1/2 top-1/2"
-                        style={{
-                          width: "42%",
-                          transform: `translate(-50%, -50%) rotate(${slice.angle}deg)`,
-                          transformOrigin: "center left",
-                        }}
-                      >
-                        <span
-                          className="absolute right-[13%] top-1/2 inline-flex -translate-y-1/2 rounded-full bg-black/25 px-2.5 py-1 text-[10px] font-bold text-white shadow-[0_6px_16px_rgba(0,0,0,0.28)] backdrop-blur sm:text-xs"
-                          style={{ transform: `rotate(-${slice.angle}deg)` }}
-                        >
-                          {slice.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={spin}
-                    disabled={spinning}
-                    className="absolute left-1/2 top-1/2 z-20 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black text-lg font-black text-white shadow-[0_0_0_6px_rgba(255,255,255,0.05)] transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70 sm:h-28 sm:w-28"
-                  >
-                    GIRAR
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={spin}
-                disabled={spinning}
-                className="mt-2 inline-flex min-h-14 w-full max-w-[15rem] items-center justify-center rounded-full bg-white px-7 text-base font-semibold text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-75"
-              >
-                {spinning ? "Girando agora..." : "Girar agora"}
-              </button>
-
-              <div className="mt-5 w-full rounded-[1.6rem] border border-white/10 bg-gradient-to-r from-white/[0.04] to-cyan-300/[0.12] px-4 py-5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:px-6 sm:py-6">
-                <div className="text-[11px] uppercase tracking-[0.38em] text-white/55 sm:text-xs">
-                  Resultado
-                </div>
-                <div className="mt-3 text-3xl font-black leading-tight tracking-[-0.04em] text-white sm:text-4xl">
-                  {result}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+    <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(236,72,153,0.18),_transparent_38%),radial-gradient(circle_at_bottom,_rgba(6,182,212,0.22),_transparent_30%),linear-gradient(180deg,rgba(20,8,30,0.95),rgba(5,8,28,0.98))] p-5 shadow-[0_0_80px_rgba(0,0,0,0.35)] sm:p-6 lg:p-7">
+      <div className="mb-4 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+        <span className="rounded-full border border-white/15 bg-white/8 px-3 py-1 text-xs font-medium text-white/85 backdrop-blur">
+          Roleta ao vivo
+        </span>
+        <span className="rounded-full border border-fuchsia-300/15 bg-fuchsia-200/10 px-3 py-1 text-xs font-medium text-white/85 backdrop-blur">
+          nomes alinhados e limpos
+        </span>
       </div>
-    </main>
+
+      <div className="flex flex-col items-center gap-6">
+        <div className="relative flex w-full justify-center">
+          <div className="absolute top-3 z-20 h-0 w-0 border-l-[18px] border-r-[18px] border-b-[32px] border-l-transparent border-r-transparent border-b-white drop-shadow-[0_8px_20px_rgba(255,255,255,0.22)]" />
+
+          <div className="relative aspect-square w-full max-w-[520px] rounded-full p-3 sm:p-4">
+            <div className="absolute inset-0 rounded-full bg-black/55 shadow-[inset_0_0_0_10px_rgba(255,255,255,0.05)]" />
+            <div className="absolute inset-[10px] rounded-full bg-black/88 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.06)]" />
+
+            <svg
+              viewBox={`0 0 ${WHEEL_SIZE} ${WHEEL_SIZE}`}
+              className="relative z-10 h-full w-full"
+              style={{
+                transform: `rotate(${rotation}deg)`,
+                transition: spinning
+                  ? "transform 4.7s cubic-bezier(0.16, 1, 0.3, 1)"
+                  : "transform 0.4s ease-out",
+              }}
+            >
+              {DEMO_OPTIONS.map((option, index) => {
+                const startAngle = index * sliceAngle - 90;
+                const endAngle = startAngle + sliceAngle;
+
+                return (
+                  <path
+                    key={`slice-${option.label}-${index}`}
+                    d={createSlicePath(startAngle, endAngle)}
+                    fill={option.color}
+                    opacity={0.98}
+                  />
+                );
+              })}
+
+              {labels.map((option, index) => {
+                const pillWidth = Math.max(70, Math.min(120, option.text.length * 10 + 28));
+
+                return (
+                  <g
+                    key={`label-${option.label}-${index}`}
+                    transform={`translate(${option.x} ${option.y}) rotate(${option.rotation})`}
+                  >
+                    <rect
+                      x={-pillWidth / 2}
+                      y={-18}
+                      rx={16}
+                      ry={16}
+                      width={pillWidth}
+                      height={36}
+                      fill="rgba(17,24,39,0.34)"
+                      stroke="rgba(255,255,255,0.12)"
+                      strokeWidth="1.25"
+                      filter="drop-shadow(0 8px 14px rgba(0,0,0,0.18))"
+                    />
+                    <text
+                      x="0"
+                      y="1"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="white"
+                      fontSize="20"
+                      fontWeight="700"
+                      letterSpacing="0"
+                    >
+                      {option.text}
+                    </text>
+                  </g>
+                );
+              })}
+
+              <circle cx={CENTER} cy={CENTER} r="64" fill="rgba(0,0,0,0.94)" stroke="rgba(255,255,255,0.12)" strokeWidth="4" />
+              <circle cx={CENTER} cy={CENTER} r="71" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
+              <text
+                x={CENTER}
+                y={CENTER + 6}
+                textAnchor="middle"
+                fill="white"
+                fontSize="40"
+                fontWeight="800"
+                letterSpacing="1"
+              >
+                GIRAR
+              </text>
+            </svg>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={spinWheel}
+          disabled={spinning}
+          className="inline-flex min-h-[60px] items-center justify-center rounded-full bg-white px-8 text-lg font-semibold text-black shadow-[0_14px_32px_rgba(255,255,255,0.16)] transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[240px]"
+        >
+          {spinning ? "Girando..." : "Girar agora"}
+        </button>
+
+        <div className="w-full rounded-[1.75rem] border border-white/10 bg-[linear-gradient(90deg,rgba(255,255,255,0.04),rgba(34,211,238,0.16))] px-5 py-6 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:px-8">
+          <p className="mb-2 text-xs uppercase tracking-[0.45em] text-white/60">Resultado</p>
+          <p className="text-3xl font-black leading-tight text-white sm:text-4xl">{result}</p>
+        </div>
+      </div>
+    </section>
   );
 }
 
-function FeatureCard({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="rounded-[1.45rem] border border-white/10 bg-white/[0.04] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur sm:px-5 sm:py-5">
-      <div className="text-[11px] uppercase tracking-[0.32em] text-white/55 sm:text-xs">
-        {title}
-      </div>
-      <div className="mt-3 text-xl font-bold leading-snug text-white sm:text-[1.7rem] lg:text-[1.6rem]">
-        {text}
-      </div>
-    </div>
-  );
+function createSlicePath(startAngle: number, endAngle: number) {
+  const start = polarToCartesian(CENTER, CENTER, RADIUS, endAngle);
+  const end = polarToCartesian(CENTER, CENTER, RADIUS, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+  return [
+    `M ${CENTER} ${CENTER}`,
+    `L ${start.x} ${start.y}`,
+    `A ${RADIUS} ${RADIUS} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`,
+    "Z",
+  ].join(" ");
 }
 
-function Badge({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-white/85 backdrop-blur">
-      {children}
-    </div>
-  );
+function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {
+  const angleInRadians = (angleInDegrees * Math.PI) / 180;
+
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians),
+  };
+}
+
+function truncate(text: string, max: number) {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
