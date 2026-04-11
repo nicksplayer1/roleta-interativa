@@ -8,23 +8,9 @@ import WheelPreview from "@/components/wheel/wheel-preview";
 import { getDefaultOptions, makeWheelSlug, normalizeOptions } from "@/lib/wheel-utils";
 import type { WheelOption } from "@/types/wheel";
 
-type TimeoutMessage = "Tempo esgotado ao salvar. Tente novamente.";
-
-function withTimeout<T>(promise: Promise<T>, ms = 12000): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      reject(new Error("Tempo esgotado ao salvar. Tente novamente." as TimeoutMessage));
-    }, ms);
-
-    promise
-      .then((value) => {
-        clearTimeout(timer);
-        resolve(value);
-      })
-      .catch((err: unknown) => {
-        clearTimeout(timer);
-        reject(err);
-      });
+function timeoutReject(ms: number, message: string) {
+  return new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(message)), ms);
   });
 }
 
@@ -49,15 +35,22 @@ function CreateWheelPageInner() {
   const validOptions = useMemo(() => normalizeOptions(options), [options]);
 
   function updateOption(index: number, field: "label" | "color", value: string) {
-    setOptions((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
+    setOptions((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
   }
 
   function addOption() {
-    setOptions((prev) => [...prev, { label: `Opção ${prev.length + 1}`, color: "#8b5cf6" }]);
+    setOptions((prev) => [
+      ...prev,
+      { label: `Opção ${prev.length + 1}`, color: "#8b5cf6" },
+    ]);
   }
 
   function removeOption(index: number) {
-    setOptions((prev) => (prev.length <= 2 ? prev : prev.filter((_, i) => i !== index)));
+    setOptions((prev) =>
+      prev.length <= 2 ? prev : prev.filter((_, i) => i !== index)
+    );
   }
 
   async function handleSave() {
@@ -79,18 +72,16 @@ function CreateWheelPageInner() {
     setSaving(true);
 
     try {
-      const sessionResponse = await withTimeout<Awaited<ReturnType<typeof supabase.auth.getSession>>>(
+      const sessionResponse = await Promise.race([
         supabase.auth.getSession(),
-        8000
-      );
+        timeoutReject(8000, "Tempo esgotado ao verificar a sessão."),
+      ]);
 
-      const { data: sessionData, error: sessionError } = sessionResponse;
-
-      if (sessionError) {
-        throw new Error(sessionError.message);
+      if (sessionResponse.error) {
+        throw new Error(sessionResponse.error.message);
       }
 
-      const user = sessionData.session?.user;
+      const user = sessionResponse.data.session?.user;
 
       if (!user) {
         throw new Error("Você precisa estar logado para salvar.");
@@ -98,9 +89,7 @@ function CreateWheelPageInner() {
 
       const slug = makeWheelSlug(title);
 
-      const insertResponse = await withTimeout<
-        Awaited<ReturnType<typeof supabase.from<"wheels", never>("wheels").insert>>
-      >(
+      const insertResponse = await Promise.race([
         supabase.from("wheels").insert({
           user_id: user.id,
           slug,
@@ -112,8 +101,8 @@ function CreateWheelPageInner() {
           spin_seconds: spinSeconds,
           is_public: isPublic,
         }),
-        12000
-      );
+        timeoutReject(12000, "Tempo esgotado ao salvar. Tente novamente."),
+      ]);
 
       if (insertResponse.error) {
         throw new Error(insertResponse.error.message);
@@ -121,7 +110,8 @@ function CreateWheelPageInner() {
 
       setCreatedSlug(slug);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erro ao salvar a roleta.";
+      const message =
+        err instanceof Error ? err.message : "Erro ao salvar a roleta.";
       setError(message);
     } finally {
       setSaving(false);
@@ -153,9 +143,13 @@ function CreateWheelPageInner() {
           </p>
 
           <div className="mt-6 rounded-[26px] border border-white/10 bg-white/5 p-4">
-            <div className="text-xs uppercase tracking-[0.32em] text-white/45">Link público</div>
+            <div className="text-xs uppercase tracking-[0.32em] text-white/45">
+              Link público
+            </div>
             <div className="mt-3 break-all text-base text-cyan-200 md:text-lg">
-              {typeof window !== "undefined" ? `${window.location.origin}/wheel/${createdSlug}` : `/wheel/${createdSlug}`}
+              {typeof window !== "undefined"
+                ? `${window.location.origin}/wheel/${createdSlug}`
+                : `/wheel/${createdSlug}`}
             </div>
           </div>
 
@@ -195,12 +189,16 @@ function CreateWheelPageInner() {
           </div>
 
           <h1 className="mt-5 text-4xl font-black tracking-[-0.04em] md:text-5xl">
-            {isSendMode ? "Monte a roleta e envie o link pronto." : "Monte sua roleta personalizada."}
+            {isSendMode
+              ? "Monte a roleta e envie o link pronto."
+              : "Monte sua roleta personalizada."}
           </h1>
 
           <div className="mt-8 space-y-5">
             <div>
-              <label className="mb-2 block text-sm font-medium text-white/80">Título</label>
+              <label className="mb-2 block text-sm font-medium text-white/80">
+                Título
+              </label>
               <input
                 className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-white outline-none placeholder:text-white/35"
                 value={title}
@@ -210,7 +208,9 @@ function CreateWheelPageInner() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-white/80">Descrição</label>
+              <label className="mb-2 block text-sm font-medium text-white/80">
+                Descrição
+              </label>
               <textarea
                 className="min-h-24 w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-white outline-none placeholder:text-white/35"
                 value={description}
@@ -220,7 +220,9 @@ function CreateWheelPageInner() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-white/80">URL da capa</label>
+              <label className="mb-2 block text-sm font-medium text-white/80">
+                URL da capa
+              </label>
               <input
                 className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-white outline-none placeholder:text-white/35"
                 value={coverImageUrl}
@@ -231,7 +233,9 @@ function CreateWheelPageInner() {
 
             <div>
               <div className="mb-3 flex items-center justify-between gap-3">
-                <label className="block text-sm font-medium text-white/80">Opções</label>
+                <label className="block text-sm font-medium text-white/80">
+                  Opções
+                </label>
                 <button
                   type="button"
                   onClick={addOption}
@@ -270,7 +274,9 @@ function CreateWheelPageInner() {
 
             <div className="grid gap-5 md:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">Mensagem final</label>
+                <label className="mb-2 block text-sm font-medium text-white/80">
+                  Mensagem final
+                </label>
                 <input
                   className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-white outline-none placeholder:text-white/35"
                   value={resultMessage}
@@ -280,7 +286,9 @@ function CreateWheelPageInner() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">Tempo do giro</label>
+                <label className="mb-2 block text-sm font-medium text-white/80">
+                  Tempo do giro
+                </label>
                 <input
                   type="number"
                   min={2}
