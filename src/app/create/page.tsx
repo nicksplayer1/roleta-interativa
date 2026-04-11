@@ -8,12 +8,6 @@ import WheelPreview from "@/components/wheel/wheel-preview";
 import { getDefaultOptions, makeWheelSlug, normalizeOptions } from "@/lib/wheel-utils";
 import type { WheelOption } from "@/types/wheel";
 
-function timeoutReject(ms: number, message: string) {
-  return new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error(message)), ms);
-  });
-}
-
 function CreateWheelPageInner() {
   const searchParams = useSearchParams();
   const isSendMode = searchParams.get("mode") === "send";
@@ -53,6 +47,16 @@ function CreateWheelPageInner() {
     );
   }
 
+  function makeEditToken() {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random()
+      .toString(36)
+      .slice(2)}`;
+  }
+
   async function handleSave() {
     if (saving) return;
 
@@ -72,40 +76,25 @@ function CreateWheelPageInner() {
     setSaving(true);
 
     try {
-      const sessionResponse = await Promise.race([
-        supabase.auth.getSession(),
-        timeoutReject(8000, "Tempo esgotado ao verificar a sessão."),
-      ]);
-
-      if (sessionResponse.error) {
-        throw new Error(sessionResponse.error.message);
-      }
-
-      const user = sessionResponse.data.session?.user;
-
-      if (!user) {
-        throw new Error("Você precisa estar logado para salvar.");
-      }
-
       const slug = makeWheelSlug(title);
+      const editToken = makeEditToken();
 
-      const insertResponse = await Promise.race([
-        supabase.from("wheels").insert({
-          user_id: user.id,
-          slug,
-          title: title.trim(),
-          description: description.trim() || null,
-          cover_image_url: coverImageUrl.trim() || null,
-          options: validOptions,
-          result_message: resultMessage.trim() || null,
-          spin_seconds: spinSeconds,
-          is_public: isPublic,
-        }),
-        timeoutReject(12000, "Tempo esgotado ao salvar. Tente novamente."),
-      ]);
+      const { error: insertError } = await supabase.from("wheels").insert({
+        user_id: null,
+        slug,
+        title: title.trim(),
+        description: description.trim() || null,
+        cover_image_url: coverImageUrl.trim() || null,
+        options: validOptions,
+        result_message: resultMessage.trim() || null,
+        spin_seconds: spinSeconds,
+        is_public: isPublic,
+        created_via: "anonymous",
+        edit_token: editToken,
+      });
 
-      if (insertResponse.error) {
-        throw new Error(insertResponse.error.message);
+      if (insertError) {
+        throw new Error(insertError.message);
       }
 
       setCreatedSlug(slug);
@@ -169,10 +158,10 @@ function CreateWheelPageInner() {
             </Link>
 
             <Link
-              href="/dashboard"
+              href="/"
               className="rounded-full border border-white/10 bg-white/5 px-7 py-4 text-base font-semibold text-white transition hover:bg-white/10"
             >
-              Ir para o dashboard
+              Voltar
             </Link>
           </div>
         </div>
@@ -322,7 +311,7 @@ function CreateWheelPageInner() {
               </button>
 
               <Link
-                href="/dashboard"
+                href="/"
                 className="rounded-full border border-white/10 bg-white/5 px-7 py-4 text-base font-semibold text-white transition hover:bg-white/10"
               >
                 Voltar
