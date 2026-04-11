@@ -40,7 +40,24 @@ function CreateWheelPageInner() {
     setOptions((prev) => (prev.length <= 2 ? prev : prev.filter((_, i) => i !== index)));
   }
 
+  function withTimeout<T>(promise: Promise<T>, ms = 12000): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Tempo esgotado ao salvar. Tente novamente.")), ms);
+      promise
+        .then((value) => {
+          clearTimeout(timer);
+          resolve(value);
+        })
+        .catch((err) => {
+          clearTimeout(timer);
+          reject(err);
+        });
+    });
+  }
+
   async function handleSave() {
+    if (saving) return;
+
     setError("");
     setCopied(false);
 
@@ -56,37 +73,51 @@ function CreateWheelPageInner() {
 
     setSaving(true);
 
-    const { data: auth } = await supabase.auth.getUser();
-    const user = auth.user;
+    try {
+      // getSession é mais leve no client e evita travar buscando usuário remotamente
+      const { data: sessionData, error: sessionError } = await withTimeout(
+        supabase.auth.getSession(),
+        8000
+      );
 
-    if (!user) {
+      if (sessionError) {
+        throw new Error(sessionError.message);
+      }
+
+      const user = sessionData.session?.user;
+
+      if (!user) {
+        throw new Error("Você precisa estar logado para salvar.");
+      }
+
+      const slug = makeWheelSlug(title);
+
+      const { error: insertError } = await withTimeout(
+        supabase.from("wheels").insert({
+          user_id: user.id,
+          slug,
+          title: title.trim(),
+          description: description.trim() || null,
+          cover_image_url: coverImageUrl.trim() || null,
+          options: validOptions,
+          result_message: resultMessage.trim() || null,
+          spin_seconds: spinSeconds,
+          is_public: isPublic,
+        }),
+        12000
+      );
+
+      if (insertError) {
+        throw new Error(insertError.message);
+      }
+
+      setCreatedSlug(slug);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao salvar a roleta.";
+      setError(message);
+    } finally {
       setSaving(false);
-      setError("Você precisa estar logado para salvar.");
-      return;
     }
-
-    const slug = makeWheelSlug(title);
-
-    const { error: insertError } = await supabase.from("wheels").insert({
-      user_id: user.id,
-      slug,
-      title: title.trim(),
-      description: description.trim() || null,
-      cover_image_url: coverImageUrl.trim() || null,
-      options: validOptions,
-      result_message: resultMessage.trim() || null,
-      spin_seconds: spinSeconds,
-      is_public: isPublic,
-    });
-
-    setSaving(false);
-
-    if (insertError) {
-      setError(insertError.message);
-      return;
-    }
-
-    setCreatedSlug(slug);
   }
 
   async function copyCreatedLink() {
